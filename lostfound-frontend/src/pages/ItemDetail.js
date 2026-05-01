@@ -1,0 +1,219 @@
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import Navbar from "../components/Navbar";
+import Lightbox from "../components/Lightbox";
+import MapView from "../components/MapView";
+import { addRecentlyViewed } from "../utils/recentlyViewed";
+import { timeAgo } from "../utils/timeAgo";
+import { toggleLike, isLiked } from "../utils/likedItems";
+
+const FALLBACK = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnfuwM3nVEAX6CTZEiDqyLuvc59VGM5DyN1Q&s";
+
+const copyContact = (num) => {
+  navigator.clipboard.writeText(num).catch(() => {});
+  toast.success(`${num} — хуулагдлаа 📋`, { duration: 1500 });
+};
+
+function ItemDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [item,    setItem]    = useState(null);
+  const [similar, setSimilar] = useState([]);
+  const [lightbox, setLightbox] = useState(null);
+  const [liked,   setLiked]   = useState(false);
+
+  useEffect(() => {
+    axios.get("http://localhost:5000/api/items")
+      .then(res => {
+        const found = res.data.find(i => i._id === id);
+        setItem(found);
+        if (found) {
+          addRecentlyViewed(found);
+          setLiked(isLiked(found._id));
+        }
+      })
+      .catch(console.log);
+
+    axios.get(`http://localhost:5000/api/items/${id}/similar`)
+      .then(res => setSimilar(res.data))
+      .catch(() => {});
+  }, [id]);
+
+  const handleLike = () => {
+    if (!item) return;
+    const nowLiked = toggleLike(item);
+    setLiked(nowLiked);
+    toast(nowLiked ? "❤️ Хадгалагдлаа" : "Хадгалсанаас хасагдлаа", { duration: 1300 });
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: item?.title, text: item?.description || "", url });
+      } catch {}
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+      toast.success("Холбоос хуулагдлаа 📋");
+    }
+  };
+
+  const handlePrint = () => window.print();
+
+  if (!item) return (
+    <div>
+      <Navbar />
+      <div className="loading"><div className="spinner" /> Ачаалж байна...</div>
+    </div>
+  );
+
+  const imgSrc  = item.image ? `http://localhost:5000/uploads/${item.image}` : FALLBACK;
+  const contact = item.contact || "86788622";
+
+  return (
+    <div>
+      <Navbar />
+
+      {lightbox && (
+        <Lightbox src={lightbox} alt={item.title} onClose={() => setLightbox(null)} />
+      )}
+
+      <div className="detail-page">
+
+        <div className="detail-top-actions">
+          <button className="btn btn-outline detail-back" onClick={() => navigate(-1)}>
+            ← Буцах
+          </button>
+          <div className="detail-share-row">
+            <button className={`btn-icon${liked ? " liked" : ""}`} onClick={handleLike} title="Хадгалах">
+              {liked ? "❤️" : "🤍"}
+            </button>
+            <button className="btn btn-outline detail-share-btn" onClick={handleShare} title="Хуваалцах">
+              🔗 Хуваалцах
+            </button>
+            <button className="btn btn-outline detail-print-btn" onClick={handlePrint} title="Хэвлэх">
+              🖨️ Хэвлэх
+            </button>
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <div className="detail-img-wrap">
+            <img
+              src={imgSrc}
+              className="detail-img clickable-img"
+              alt={item.title}
+              onError={e => { e.target.src = FALLBACK; }}
+              onClick={() => setLightbox(imgSrc)}
+              title="Дарж томруулж харах"
+            />
+            <div className="detail-img-hint">🔍 Дарж томруулах</div>
+          </div>
+
+          <div className="detail-body">
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span className={`card-type-badge ${item.type}`} style={{ position: "static" }}>
+                {item.type === "lost" ? "Хаясан" : "Олдсон"}
+              </span>
+              <span className={`status-badge ${item.status || "pending"}`}>
+                {item.status || "pending"}
+              </span>
+            </div>
+
+            <h2>{item.title}</h2>
+            <p className="detail-desc">{item.description}</p>
+
+            <div className="detail-meta">
+              <div className="detail-meta-item">
+                <div className="meta-icon">📍</div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Байршил</strong>
+                  {item.location || "—"}
+                </div>
+              </div>
+
+              <div className="detail-meta-item copyable" onClick={() => copyContact(contact)} title="Дарж хуулах">
+                <div className="meta-icon">📞</div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>
+                    Холбоо барих <span style={{ fontSize: 10 }}>📋</span>
+                  </strong>
+                  {contact}
+                </div>
+              </div>
+
+              <div className="detail-meta-item">
+                <div className="meta-icon">📅</div>
+                <div>
+                  <strong style={{ display: "block", fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Огноо</strong>
+                  {timeAgo(item.createdAt)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MAP SECTION ── */}
+        {item.location && (
+          <div className="map-section">
+            <div className="map-section-header">
+              <h3>📍 Байршлын газрын зураг</h3>
+              <a
+                href={`https://www.google.com/maps/search/${encodeURIComponent(item.location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="map-gmaps-link"
+              >
+                Google Maps ↗
+              </a>
+            </div>
+            <div className="map-card">
+              <MapView location={item.location} />
+            </div>
+          </div>
+        )}
+
+        {similar.length > 0 && (
+          <div className="similar-section">
+            <h3>🤖 AI санал болгох зүйлс</h3>
+            <div className="item-grid">
+              {similar.map(s => {
+                const sImg = s.image ? `http://localhost:5000/uploads/${s.image}` : FALLBACK;
+                return (
+                  <div className="item-card" key={s._id}>
+                    <div className="card-img-wrap">
+                      <img
+                        src={sImg}
+                        className="card-img clickable-img"
+                        alt={s.title}
+                        onError={e => { e.target.src = FALLBACK; }}
+                        onClick={() => setLightbox(sImg)}
+                      />
+                    </div>
+                    <div className="card-body">
+                      <Link to={`/item/${s._id}`} className="card-title">{s.title}</Link>
+                      <div className="card-meta">
+                        <span>📍 {s.location}</span>
+                        <span style={{
+                          color: s.score > 8 ? "#15803d" : s.score > 4 ? "#b45309" : "#b91c1c",
+                          fontWeight: 600,
+                        }}>
+                          🤖 AI оноо: {s.score?.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+export default ItemDetail;
