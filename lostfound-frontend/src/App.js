@@ -12,6 +12,7 @@ import ItemDetail  from "./pages/ItemDetail";
 import Admin       from "./pages/Admin";
 import Leaderboard from "./pages/Leaderboard";
 import Archive     from "./pages/Archive";
+import SavedItems  from "./pages/SavedItems";
 import NotFound    from "./pages/NotFound";
 
 import Footer      from "./components/Footer";
@@ -50,6 +51,7 @@ function App() {
         <Route path="/item/:id"    element={<ItemDetail />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/archive"     element={<Archive />} />
+        <Route path="/saved"       element={<SavedItems />} />
         <Route path="*"            element={<NotFound />} />
       </Routes>
       <Footer />

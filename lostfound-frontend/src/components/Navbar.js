@@ -69,6 +69,7 @@ function Navbar() {
         <Link to="/lost"        className={active("/lost")}                onClick={close}>🔴 Хаясан</Link>
         <Link to="/found"       className={active("/found")}               onClick={close}>🟢 Олдсон</Link>
         <Link to="/add"         className={active("/add")}                 onClick={close}>＋ Нэмэх</Link>
+        <Link to="/saved"       className={active("/saved")}               onClick={close}>❤️ Хадгалсан</Link>
         <Link to="/archive"     className={active("/archive")}             onClick={close}>📚 Архив</Link>
         <Link to="/leaderboard" className={active("/leaderboard")}         onClick={close}>🏆 Шилдэг</Link>
 

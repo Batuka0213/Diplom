@@ -119,7 +119,7 @@ function FoundItems() {
   const filtered = items
     .filter(i => i.type?.toLowerCase() === "found")
     .filter(i => status === "all" || i.status === status)
-    .filter(i => cat === "all" || inferCat(i.title, i.description) === cat)
+    .filter(i => cat === "all" || (i.category || inferCat(i.title, i.description)) === cat)
     .filter(i =>
       i.title?.toLowerCase().includes(search.toLowerCase()) ||
       i.description?.toLowerCase().includes(search.toLowerCase()) ||

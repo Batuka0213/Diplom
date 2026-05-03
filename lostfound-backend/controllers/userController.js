@@ -22,7 +22,8 @@ exports.registerUser = async (req, res) => {
       email,
       password,
       studentCode,
-      points: 0
+      points: 0,
+      authProvider: "local"
     });
 
     res.status(201).json({
@@ -78,6 +79,49 @@ exports.loginUser = async (req, res) => {
 
   } catch (err) {
     res.status(500).json(err);
+  }
+};
+
+
+
+// --------------------
+// 🔐 Google/Gmail Login
+// --------------------
+exports.googleLogin = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Gmail хаяг оруулна уу" });
+    }
+
+    // Хэрэглэгч аль хэдийн бүртгэлтэй эсэхийг шалгах
+    let user = await User.findOne({ email });
+
+    if (user) {
+      // Хэрэв байгаа хэрэглэгч бол шууд нэвтрүүлэх
+      if (!user.authProvider || user.authProvider === "local") {
+        user.authProvider = "google";
+        await user.save();
+      }
+    } else {
+      // Шинэ хэрэглэгч үүсгэх
+      user = await User.create({
+        name: name || email.split("@")[0],
+        email,
+        authProvider: "google",
+        points: 0
+      });
+    }
+
+    res.json({
+      message: "Gmail login амжилттай",
+      user
+    });
+
+  } catch (err) {
+    console.error("Google login error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

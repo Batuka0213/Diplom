@@ -14,6 +14,9 @@ router.post("/register", userController.registerUser);
 // login
 router.post("/login", userController.loginUser);
 
+// 🔐 Google login
+router.post("/google-login", userController.googleLogin);
+
 
 // ============================
 // USERS

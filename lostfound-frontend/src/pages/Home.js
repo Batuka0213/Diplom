@@ -72,32 +72,55 @@ function Home() {
     <div>
       <Navbar />
 
-      {/* ── HERO ── */}
+      {/* ── HERO (iLost inspired) ── */}
       <div className="hero">
-        <div className="hero-badge">🤖 AI-д суурилсан систем</div>
-        <h1>
-          Хаясан зүйлээ <span>олоход туслах</span><br />ухаалаг систем
-        </h1>
-        <p>
-          Хаясан болон олсон эд зүйлсийг хурдан бүртгэж,
-          AI технологийн тусламжтайгаар эзнийг нь олоход туслана.
-        </p>
+        <div className="hero-bg-shapes">
+          <div className="hero-shape hero-shape-1"></div>
+          <div className="hero-shape hero-shape-2"></div>
+          <div className="hero-shape hero-shape-3"></div>
+        </div>
 
-        <form className="hero-search" onSubmit={handleSearch}>
-          <div className="hero-search-wrap">
-            <span className="hero-search-icon">🔍</span>
-            <input
-              placeholder="Хайж буй зүйлийнхээ нэрийг бичнэ үү..."
-              value={heroSearch}
-              onChange={e => setHeroSearch(e.target.value)}
-            />
-            <button type="submit" className="hero-search-btn">Хайх</button>
+        <div className="hero-content">
+          <div className="hero-badge">🤖 AI-д суурилсан систем</div>
+          <h1>
+            Lost &amp; Found зүйлсийг<br />
+            <span>эзэнтэй нь</span> холбоно
+          </h1>
+          <p>
+            Хаясан болон олсон эд зүйлсийг бүртгэж, AI технологийн тусламжтайгаар
+            эзнийг нь хурдан олоход туслана.
+          </p>
+
+          <form className="hero-search" onSubmit={handleSearch}>
+            <div className="hero-search-wrap">
+              <span className="hero-search-icon">🔍</span>
+              <input
+                placeholder="Хайж буй зүйлийнхээ нэрийг бичнэ үү..."
+                value={heroSearch}
+                onChange={e => setHeroSearch(e.target.value)}
+              />
+              <button type="submit" className="hero-search-btn">Хайх</button>
+            </div>
+          </form>
+
+          <div className="hero-cta-group">
+            <Link to="/lost" className="hero-cta-card lost">
+              <div className="hero-cta-icon">😢</div>
+              <div className="hero-cta-text">
+                <strong>Зүйлээ хаялаа</strong>
+                <span>Хаясан зүйлээ хайх</span>
+              </div>
+              <div className="hero-cta-arrow">→</div>
+            </Link>
+            <Link to="/found" className="hero-cta-card found">
+              <div className="hero-cta-icon">🎉</div>
+              <div className="hero-cta-text">
+                <strong>Зүйл олсон</strong>
+                <span>Олсон зүйлээ бүртгэх</span>
+              </div>
+              <div className="hero-cta-arrow">→</div>
+            </Link>
           </div>
-        </form>
-
-        <div className="hero-buttons">
-          <Link to="/lost"  className="btn-hero-primary">🔴 Хаясан зүйлс</Link>
-          <Link to="/found" className="btn-hero-secondary">🟢 Олдсон зүйлс</Link>
         </div>
       </div>
 
@@ -107,6 +130,37 @@ function Home() {
         <StatItem target={stats.returned} suffix=""   label="Эзэндэн хүрсэн" />
         <StatItem target={stats.lost}     suffix=""   label="Хаясан зүйлс" />
         <StatItem target={stats.found}    suffix=""   label="Олдсон зүйлс" />
+      </div>
+
+      {/* ── HOW IT WORKS (iLost inspired) ── */}
+      <div className="how-it-works">
+        <div className="how-header">
+          <div className="how-badge">📋 Хэрхэн ажилладаг вэ?</div>
+          <h2>Хялбар <span>3 алхам</span></h2>
+          <p>Хаясан эд зүйлээ олоход бид танд туслана</p>
+        </div>
+        <div className="how-steps">
+          <div className="how-step">
+            <div className="how-step-number">1</div>
+            <div className="how-step-icon">📝</div>
+            <h3>Бүртгэх</h3>
+            <p>Хаясан эсвэл олсон зүйлийнхээ мэдээллийг оруулна</p>
+          </div>
+          <div className="how-step-line"></div>
+          <div className="how-step">
+            <div className="how-step-number">2</div>
+            <div className="how-step-icon">🤖</div>
+            <h3>AI тааруулах</h3>
+            <p>AI систем хаясан болон олдсон зүйлсийг автомат тааруулна</p>
+          </div>
+          <div className="how-step-line"></div>
+          <div className="how-step">
+            <div className="how-step-number">3</div>
+            <div className="how-step-icon">🤝</div>
+            <h3>Холбогдох</h3>
+            <p>Тохирох зүйл олдвол эзэнтэй нь шууд холбогдоно</p>
+          </div>
+        </div>
       </div>
 
       {/* ── FEATURES ── */}
@@ -126,6 +180,40 @@ function Home() {
           <h3>Архив</h3>
           <p>Эзэндэн хүрсэн болон устгасан зүйлсийн түүхийг харах</p>
         </Link>
+      </div>
+
+      {/* ── TRUST SECTION ── */}
+      <div className="trust-section">
+        <div className="trust-inner">
+          <div className="trust-item">
+            <div className="trust-icon">🔒</div>
+            <div>
+              <strong>Аюулгүй</strong>
+              <span>Мэдээлэл хамгаалагдсан</span>
+            </div>
+          </div>
+          <div className="trust-item">
+            <div className="trust-icon">⚡</div>
+            <div>
+              <strong>Хурдан</strong>
+              <span>Шуурхай хариу өгнө</span>
+            </div>
+          </div>
+          <div className="trust-item">
+            <div className="trust-icon">🌐</div>
+            <div>
+              <strong>24/7</strong>
+              <span>Цаг алдалгүй хайх</span>
+            </div>
+          </div>
+          <div className="trust-item">
+            <div className="trust-icon">🤖</div>
+            <div>
+              <strong>AI систем</strong>
+              <span>Ухаалаг тааруулалт</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── RECENTLY VIEWED ── */}

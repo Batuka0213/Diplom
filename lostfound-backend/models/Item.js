@@ -12,6 +12,11 @@ const itemSchema = new mongoose.Schema({
     type: String,
     enum: ["pending", "returned"],
     default: "pending"
+  },
+
+  category: {
+    type: String,
+    default: ""
   }
 
 },{

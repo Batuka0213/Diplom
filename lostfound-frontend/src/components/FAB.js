@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 
-const HIDE_ON = ["/add", "/login", "/register", "/admin"];
+const HIDE_ON = ["/add", "/login", "/register", "/admin", "/saved"];
 
 function FAB() {
   const { pathname } = useLocation();

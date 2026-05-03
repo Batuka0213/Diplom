@@ -6,7 +6,7 @@ import Navbar from "../components/Navbar";
 import MapPicker from "../components/MapPicker";
 
 function AddItem() {
-  const [form,       setForm]       = useState({ title: "", description: "", location: "", contact: "", type: "lost" });
+  const [form,       setForm]       = useState({ title: "", description: "", location: "", contact: "", type: "lost", category: "" });
   const [image,      setImage]      = useState(null);
   const [preview,    setPreview]    = useState(null);
   const [loading,    setLoading]    = useState(false);
@@ -55,12 +55,27 @@ function AddItem() {
           <p className="form-subtitle">Хаясан эсвэл олсон зүйлийн мэдээллийг оруулна уу</p>
 
           <form onSubmit={submit}>
-            <div className="form-group">
-              <label>Төрөл</label>
-              <select name="type" value={form.type} onChange={handle}>
-                <option value="lost">🔴 Хаясан (Lost)</option>
-                <option value="found">🟢 Олсон (Found)</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Төрөл</label>
+                <select name="type" value={form.type} onChange={handle}>
+                  <option value="lost">🔴 Хаясан (Lost)</option>
+                  <option value="found">🟢 Олсон (Found)</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Ангилал</label>
+                <select name="category" value={form.category} onChange={handle}>
+                  <option value="">— Сонгох —</option>
+                  <option value="phone">📱 Утас</option>
+                  <option value="key">🔑 Түлхүүр</option>
+                  <option value="bag">🎒 Цүнх</option>
+                  <option value="card">💳 Карт</option>
+                  <option value="glasses">👓 Нүдний шил</option>
+                  <option value="jewelry">💍 Гоёл чимэглэл</option>
+                  <option value="other">📦 Бусад</option>
+                </select>
+              </div>
             </div>
 
             <div className="form-group">

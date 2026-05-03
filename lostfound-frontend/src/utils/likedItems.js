@@ -8,7 +8,7 @@ export const toggleLike = (item) => {
     localStorage.setItem(KEY, JSON.stringify(list.filter(i => i._id !== item._id)));
     return false;
   }
-  const snap = { _id: item._id, title: item.title, type: item.type, image: item.image, location: item.location };
+  const snap = { _id: item._id, title: item.title, type: item.type, image: item.image, location: item.location, category: item.category };
   localStorage.setItem(KEY, JSON.stringify([snap, ...list]));
   return true;
 };
