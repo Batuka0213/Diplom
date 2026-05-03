@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const { OAuth2Client } = require("google-auth-library");
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 
 // --------------------
@@ -85,23 +87,34 @@ exports.loginUser = async (req, res) => {
 
 
 // --------------------
-// 🔐 Google/Gmail Login
+// 🔐 Google OAuth — ID token шалгах
 // --------------------
 exports.googleLogin = async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { credential } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ message: "Gmail хаяг оруулна уу" });
+    if (!credential) {
+      return res.status(400).json({ message: "Google credential олдсонгүй" });
     }
 
-    // Хэрэглэгч аль хэдийн бүртгэлтэй эсэхийг шалгах
+    // Google ID token баталгаажуулах
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Хэрэглэгч байгаа эсэхийг шалгах
     let user = await User.findOne({ email });
 
     if (user) {
-      // Хэрэв байгаа хэрэглэгч бол шууд нэвтрүүлэх
-      if (!user.authProvider || user.authProvider === "local") {
+      // Google ID шинэчлэх
+      if (!user.googleId) {
+        user.googleId = googleId;
         user.authProvider = "google";
+        if (picture && !user.picture) user.picture = picture;
         await user.save();
       }
     } else {
@@ -109,19 +122,18 @@ exports.googleLogin = async (req, res) => {
       user = await User.create({
         name: name || email.split("@")[0],
         email,
+        googleId,
+        picture,
         authProvider: "google",
-        points: 0
+        points: 0,
       });
     }
 
-    res.json({
-      message: "Gmail login амжилттай",
-      user
-    });
+    res.json({ message: "Google нэвтрэлт амжилттай", user });
 
   } catch (err) {
     console.error("Google login error:", err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Google баталгаажуулалт амжилтгүй болсон" });
   }
 };
 

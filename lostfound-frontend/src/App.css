@@ -2466,3 +2466,18 @@ a:focus-visible, button:focus-visible, input:focus-visible {
 
 /* ─── ADD ITEM CATEGORY CHIP IN FORM ─────────────────── */
 .form-group select option[value=""] { color: var(--muted); }
+
+/* ─── GOOGLE LOGIN BUTTON WRAPPER ────────────────────── */
+.google-btn-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.google-btn-wrap > div {
+  width: 100% !important;
+}
+
+.google-btn-wrap iframe {
+  width: 100% !important;
+}

@@ -16,13 +16,12 @@ type:Number,
 default:0
 },
 
-// Google OAuth fields
 googleId: {
   type: String,
   default: null
 },
 
-avatar: {
+picture: {
   type: String,
   default: null
 },

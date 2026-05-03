@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 import Home        from "./pages/Home";
 import Login       from "./pages/Login";
@@ -29,6 +30,7 @@ function App() {
   }, []);
 
   return (
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ""}>
     <Router>
       <TopBar />
       <Toaster
@@ -58,6 +60,7 @@ function App() {
       <ScrollToTop />
       <FAB />
     </Router>
+    </GoogleOAuthProvider>
   );
 }
 
