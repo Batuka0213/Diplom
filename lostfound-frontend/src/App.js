@@ -31,7 +31,7 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ""}>
-    <Router basename="/Diplom">
+    <Router basename={process.env.NODE_ENV === 'production' ? '/Diplom' : ''}>
       <TopBar />
       <Toaster
         position="top-right"
