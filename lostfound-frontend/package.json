@@ -52,5 +52,10 @@
   },
   "devDependencies": {
     "gh-pages": "^6.3.0"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/src/__mocks__/react-router-dom.js"
+    }
   }
 }

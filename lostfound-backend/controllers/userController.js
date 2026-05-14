@@ -1,199 +1,177 @@
-const User = require("../models/User");
+const User    = require("../models/User");
+const bcrypt  = require("bcryptjs");
+const jwt     = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const signToken = (user) =>
+  jwt.sign(
+    { id: user._id, email: user.email, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "30d" }
+  );
 
-// --------------------
-// Register User
-// --------------------
+/* ─────────────────────────────────────────
+   POST /api/users/register
+───────────────────────────────────────── */
 exports.registerUser = async (req, res) => {
   try {
-
     const { name, email, password, studentCode } = req.body;
 
-    const existingUser = await User.findOne({ email });
+    if (!name?.trim())  return res.status(400).json({ message: "Нэр заавал шаардлагатай" });
+    if (!email?.trim()) return res.status(400).json({ message: "Email заавал шаардлагатай" });
+    if (!password)      return res.status(400).json({ message: "Нууц үг заавал шаардлагатай" });
+    if (password.length < 6) return res.status(400).json({ message: "Нууц үг хамгийн багадаа 6 тэмдэгт байх ёстой" });
 
-    if (existingUser) {
-      return res.status(400).json({
-        message: "Энэ email аль хэдийн бүртгэгдсэн байна",
-      });
-    }
+    const exists = await User.findOne({ email: email.toLowerCase() });
+    if (exists) return res.status(409).json({ message: "Энэ email аль хэдийн бүртгэгдсэн байна" });
 
     const user = await User.create({
-      name,
+      name: name.trim(),
       email,
       password,
-      studentCode,
-      points: 0,
-      authProvider: "local"
+      studentCode: studentCode || null,
+      authProvider: "local",
     });
 
-    res.status(201).json({
-      message: "User амжилттай бүртгэгдлээ",
-      user,
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-    });
+    const token = signToken(user);
+    res.status(201).json({ message: "Амжилттай бүртгэгдлээ", user, token });
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ message: "Энэ email аль хэдийн бүртгэгдсэн байна" });
+    console.error("[register]", err.message);
+    res.status(500).json({ message: "Бүртгэлийн үед алдаа гарлаа" });
   }
 };
 
-
-
-// --------------------
-// Login User (Gmail OR StudentCode)
-// --------------------
+/* ─────────────────────────────────────────
+   POST /api/users/login
+───────────────────────────────────────── */
 exports.loginUser = async (req, res) => {
   try {
-
     const { email, password, studentCode } = req.body;
 
     let user;
 
-    // gmail login
     if (email) {
-      user = await User.findOne({ email });
+      user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    } else if (studentCode) {
+      user = await User.findOne({ studentCode }).select("+password");
+    } else {
+      return res.status(400).json({ message: "Email эсвэл оюутны код шаардлагатай" });
     }
 
-    // student code login
-    if (studentCode) {
-      user = await User.findOne({ studentCode });
+    if (!user) return res.status(404).json({ message: "Хэрэглэгч олдсонгүй" });
+
+    /* bcrypt hash эсвэл plain-text (хуучин хэрэглэгч) хоёуланг зохицуулна */
+    let valid = false;
+    if (user.password?.startsWith("$2")) {
+      valid = await bcrypt.compare(password, user.password);
+    } else {
+      valid = user.password === password;
+      if (valid) {
+        user.password = password;   // дараагийн save-д pre-hook hash хийнэ
+        await user.save();
+      }
     }
 
-    if (!user) {
-      return res.status(404).json({
-        message: "User олдсонгүй"
-      });
-    }
+    if (!valid) return res.status(401).json({ message: "Нууц үг буруу байна" });
 
-    if (user.password !== password) {
-      return res.status(401).json({
-        message: "Нууц үг буруу"
-      });
-    }
-
-    res.json({
-      message: "Login амжилттай",
-      user
-    });
-
+    const token = signToken(user);
+    res.json({ message: "Нэвтэрлээ", user, token });
   } catch (err) {
-    res.status(500).json(err);
+    console.error("[login]", err.message);
+    res.status(500).json({ message: "Нэвтрэхэд алдаа гарлаа" });
   }
 };
 
-
-
-// --------------------
-// 🔐 Google OAuth — ID token шалгах
-// --------------------
+/* ─────────────────────────────────────────
+   POST /api/users/google-login
+───────────────────────────────────────── */
 exports.googleLogin = async (req, res) => {
   try {
     const { credential } = req.body;
+    if (!credential) return res.status(400).json({ message: "Google credential олдсонгүй" });
 
-    if (!credential) {
-      return res.status(400).json({ message: "Google credential олдсонгүй" });
-    }
+    const ticket  = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    const { email, name, picture, sub: googleId } = ticket.getPayload();
 
-    // Google ID token баталгаажуулах
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-    const { email, name, picture, sub: googleId } = payload;
-
-    // Хэрэглэгч байгаа эсэхийг шалгах
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: email.toLowerCase() });
 
     if (user) {
-      // Google ID шинэчлэх
       if (!user.googleId) {
-        user.googleId = googleId;
+        user.googleId     = googleId;
         user.authProvider = "google";
         if (picture && !user.picture) user.picture = picture;
         await user.save();
       }
     } else {
-      // Шинэ хэрэглэгч үүсгэх
       user = await User.create({
-        name: name || email.split("@")[0],
+        name:         name || email.split("@")[0],
         email,
         googleId,
         picture,
         authProvider: "google",
-        points: 0,
       });
     }
 
-    res.json({ message: "Google нэвтрэлт амжилттай", user });
-
+    const token = signToken(user);
+    res.json({ message: "Google нэвтрэлт амжилттай", user, token });
   } catch (err) {
-    console.error("Google login error:", err);
+    console.error("[googleLogin]", err.message);
     res.status(500).json({ message: "Google баталгаажуулалт амжилтгүй болсон" });
   }
 };
 
-
-
-// --------------------
-// Get All Users
-// --------------------
+/* ─────────────────────────────────────────
+   GET /api/users
+───────────────────────────────────────── */
 exports.getUsers = async (req, res) => {
   try {
-
-    const users = await User.find();
+    const users = await User.find().sort({ createdAt: -1 }).lean();
     res.json(users);
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-    });
+  } catch (err) {
+    console.error("[getUsers]", err.message);
+    res.status(500).json({ message: "Хэрэглэгчид авахад алдаа гарлаа" });
   }
 };
 
-
-
-// --------------------
-// ⭐ Leaderboard
-// --------------------
+/* ─────────────────────────────────────────
+   GET /api/users/leaderboard
+───────────────────────────────────────── */
 exports.getLeaderboard = async (req, res) => {
   try {
-
-    const users = await User.find()
+    const users = await User.find({ points: { $gt: 0 } })
+      .select("name email picture points")
       .sort({ points: -1 })
-      .limit(10);
-
+      .limit(20)
+      .lean();
     res.json(users);
-
   } catch (err) {
-    res.status(500).json(err);
+    console.error("[leaderboard]", err.message);
+    res.status(500).json({ message: "Leaderboard авахад алдаа гарлаа" });
   }
 };
 
-
-
-// --------------------
-// ⭐ Add Points
-// --------------------
+/* ─────────────────────────────────────────
+   POST /api/users/points
+───────────────────────────────────────── */
 exports.addPoints = async (req, res) => {
   try {
-
     const { userId, points } = req.body;
+    if (!userId || typeof points !== "number")
+      return res.status(400).json({ message: "userId болон points шаардлагатай" });
 
-    await User.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
-      { $inc: { points: points } }
+      { $inc: { points: Math.max(0, points) } },
+      { new: true }
     );
+    if (!user) return res.status(404).json({ message: "Хэрэглэгч олдсонгүй" });
 
-    res.json({
-      message: "Points нэмэгдлээ"
-    });
-
+    res.json({ message: "Оноо нэмэгдлээ", points: user.points });
   } catch (err) {
-    res.status(500).json(err);
+    console.error("[addPoints]", err.message);
+    res.status(500).json({ message: "Оноо нэмэхэд алдаа гарлаа" });
   }
 };

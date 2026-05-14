@@ -7,12 +7,17 @@ import SkeletonCard from "../components/SkeletonCard";
 import ConfirmModal from "../components/ConfirmModal";
 import Lightbox from "../components/Lightbox";
 import Confetti from "../components/Confetti";
+import ClaimVerifyModal from "../components/ClaimVerifyModal";
+import ClaimSubmitModal from "../components/ClaimSubmitModal";
+import ClaimStatusModal from "../components/ClaimStatusModal";
 import { saveDeleted, saveReturned } from "../utils/history";
 import { timeAgo } from "../utils/timeAgo";
 import { toggleLike, getLikedIds } from "../utils/likedItems";
 
-const FALLBACK = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnfuwM3nVEAX6CTZEiDqyLuvc59VGM5DyN1Q&s";
+const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Crect x='150' y='95' width='100' height='82' rx='8' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='22' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='9' fill='%23d1d5db'/%3E%3Crect x='162' y='103' width='18' height='10' rx='3' fill='%23d1d5db'/%3E%3C/svg%3E";
 const PAGE_SIZE = 12;
+const API_URL  = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const BASE_URL = API_URL.replace("/api", "");
 
 const STATUS_TABS = [
   ["all",      "Бүгд"],
@@ -61,12 +66,15 @@ function FoundItems() {
   const [lightbox, setLightbox] = useState(null);
   const [confetti, setConfetti] = useState(false);
   const [confirm,  setConfirm]  = useState({ open: false, id: null, action: null });
+  const [showClaim,       setShowClaim]       = useState(false);
+  const [showClaimStatus, setShowClaimStatus] = useState(false);
+  const [claimTargetItem, setClaimTargetItem] = useState(null);
 
   useEffect(() => { loadItems(); }, []);
 
   const loadItems = async () => {
     try {
-      const res   = await axios.get("http://localhost:5000/api/items");
+      const res   = await axios.get(`${API_URL}/items`);
       const liked = getLikedIds();
       setItems(res.data.map(i => ({ ...i, liked: liked.has(i._id) })));
     } catch {
@@ -89,7 +97,7 @@ function FoundItems() {
     const item = items.find(i => i._id === id);
     const tid  = toast.loading("Устгаж байна...");
     try {
-      await axios.delete(`http://localhost:5000/api/items/${id}`);
+      await axios.delete(`${API_URL}/items/${id}`);
       if (item) saveDeleted(item);
       setItems(prev => prev.filter(i => i._id !== id));
       toast.success("Устгагдлаа — Архивд хадгалагдлаа 📚", { id: tid });
@@ -102,7 +110,7 @@ function FoundItems() {
     const item = items.find(i => i._id === id);
     const tid  = toast.loading("Тэмдэглэж байна...");
     if (item) saveReturned(item);
-    try { await axios.put(`http://localhost:5000/api/items/${id}`, { status: "returned" }); } catch {}
+    try { await axios.put(`${API_URL}/items/${id}`, { status: "returned" }); } catch {}
     setItems(prev => prev.map(i => i._id === id ? { ...i, status: "returned" } : i));
     toast.success("✅ Эзэндэн хүрсэн! Архивд нэмэгдлээ 📚", { id: tid });
     setConfetti(true);
@@ -157,10 +165,28 @@ function FoundItems() {
         onCancel={closeConfirm}
       />
 
+      {showClaim       && <ClaimVerifyModal onClose={() => setShowClaim(false)} />}
+      {showClaimStatus && <ClaimStatusModal onClose={() => setShowClaimStatus(false)} />}
+      {claimTargetItem && (
+        <ClaimSubmitModal item={claimTargetItem} onClose={() => setClaimTargetItem(null)} />
+      )}
+
       <div className="page-container">
         <div className="page-header">
-          <h1>🟢 Олдсон зүйлс</h1>
-          <p>Олдсон эд зүйлсийн жагсаалт</p>
+          <div>
+            <h1>🟢 Олдсон зүйлс</h1>
+            <p>Олдсон эд зүйлсийн жагсаалт</p>
+          </div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button className="btn-claim-trigger" onClick={() => setShowClaim(true)}>
+              <span className="claim-trigger-icon">🔍</span>
+              <span>Миний зүйл энд байна уу?</span>
+            </button>
+            <button className="btn-claim-trigger btn-status-trigger" onClick={() => setShowClaimStatus(true)}>
+              <span className="claim-trigger-icon">📋</span>
+              <span>Хүсэлтийн хариу</span>
+            </button>
+          </div>
         </div>
 
         <div className="search-bar">
@@ -224,7 +250,7 @@ function FoundItems() {
           <>
             <div className={view === "list" ? "item-list" : "item-grid"}>
               {visible_items.map(item => {
-                const imgSrc = item.image ? `http://localhost:5000/uploads/${item.image}` : FALLBACK;
+                const imgSrc = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
                 return (
                   <div className={view === "list" ? "item-row" : "item-card"} key={item._id}>
                     <div className="card-img-wrap">
@@ -257,7 +283,15 @@ function FoundItems() {
                           {item.liked ? "❤️" : "🤍"}
                         </button>
                         {item.status !== "returned" && (
-                          <button className="btn-icon returned" onClick={() => openConfirm(item._id, "returned")} title="Эзэндэн хүрсэн">✅</button>
+                          <>
+                            <button
+                              className="btn-icon"
+                              style={{ fontSize: 13, padding: "4px 8px", background: "#f0f9ff", color: "#0369a1", border: "1px solid #bae6fd", borderRadius: 6 }}
+                              onClick={() => setClaimTargetItem(item)}
+                              title="Энэ миний зүйл — хүсэлт гаргах"
+                            >🔐 Минийх</button>
+                            <button className="btn-icon returned" onClick={() => openConfirm(item._id, "returned")} title="Эзэндэн хүрсэн">✅</button>
+                          </>
                         )}
                         <button className="btn-icon delete" onClick={() => openConfirm(item._id, "delete")} title="Устгах">🗑</button>
                       </div>

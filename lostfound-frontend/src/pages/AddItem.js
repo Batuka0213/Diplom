@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
@@ -37,7 +37,7 @@ function AddItem() {
       const data = new FormData();
       Object.entries(form).forEach(([k, v]) => data.append(k, v));
       if (image) data.append("image", image);
-      await axios.post("http://localhost:5000/api/items", data);
+      await API.post("/items", data);
       toast.success("Амжилттай бүртгэгдлээ!", { id: tid });
       setTimeout(() => navigate("/lost"), 1200);
     } catch (err) {

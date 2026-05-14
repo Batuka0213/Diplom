@@ -9,7 +9,9 @@ import { addRecentlyViewed } from "../utils/recentlyViewed";
 import { timeAgo } from "../utils/timeAgo";
 import { toggleLike, isLiked } from "../utils/likedItems";
 
-const FALLBACK = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnfuwM3nVEAX6CTZEiDqyLuvc59VGM5DyN1Q&s";
+const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Crect x='150' y='95' width='100' height='82' rx='8' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='22' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='9' fill='%23d1d5db'/%3E%3Crect x='162' y='103' width='18' height='10' rx='3' fill='%23d1d5db'/%3E%3C/svg%3E";
+const API_URL  = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const BASE_URL = API_URL.replace("/api", "");
 
 const copyContact = (num) => {
   navigator.clipboard.writeText(num).catch(() => {});
@@ -25,7 +27,7 @@ function ItemDetail() {
   const [liked,   setLiked]   = useState(false);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/items")
+    axios.get(`${API_URL}/items`)
       .then(res => {
         const found = res.data.find(i => i._id === id);
         setItem(found);
@@ -36,7 +38,7 @@ function ItemDetail() {
       })
       .catch(console.log);
 
-    axios.get(`http://localhost:5000/api/items/${id}/similar`)
+    axios.get(`${API_URL}/items/${id}/similar`)
       .then(res => setSimilar(res.data))
       .catch(() => {});
   }, [id]);
@@ -69,7 +71,7 @@ function ItemDetail() {
     </div>
   );
 
-  const imgSrc  = item.image ? `http://localhost:5000/uploads/${item.image}` : FALLBACK;
+  const imgSrc  = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
   const contact = item.contact || "86788622";
 
   return (
@@ -180,7 +182,7 @@ function ItemDetail() {
             <h3>🤖 AI санал болгох зүйлс</h3>
             <div className="item-grid">
               {similar.map(s => {
-                const sImg = s.image ? `http://localhost:5000/uploads/${s.image}` : FALLBACK;
+                const sImg = s.image ? (s.image.startsWith("http") ? s.image : `${BASE_URL}/uploads/${s.image}`) : FALLBACK;
                 return (
                   <div className="item-card" key={s._id}>
                     <div className="card-img-wrap">

@@ -4,7 +4,8 @@ import Navbar from "../components/Navbar";
 import { getLiked, toggleLike } from "../utils/likedItems";
 import toast from "react-hot-toast";
 
-const FALLBACK = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnfuwM3nVEAX6CTZEiDqyLuvc59VGM5DyN1Q&s";
+const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Crect x='150' y='95' width='100' height='82' rx='8' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='22' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='9' fill='%23d1d5db'/%3E%3Crect x='162' y='103' width='18' height='10' rx='3' fill='%23d1d5db'/%3E%3C/svg%3E";
+const BASE_URL = (process.env.REACT_APP_API_URL || "http://localhost:5000/api").replace("/api", "");
 
 function SavedItems() {
   const [items, setItems] = useState([]);
@@ -55,9 +56,7 @@ function SavedItems() {
 
             <div className="saved-grid">
               {items.map(item => {
-                const imgSrc = item.image
-                  ? `http://localhost:5000/uploads/${item.image}`
-                  : FALLBACK;
+                const imgSrc = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
                 return (
                   <div className="saved-card" key={item._id}>
                     <div className="saved-img-wrap">

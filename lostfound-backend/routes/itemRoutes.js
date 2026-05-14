@@ -1,27 +1,29 @@
 const express = require("express");
-const router = express.Router();
-const multer = require("multer");
+const multer  = require("multer");
+const router  = express.Router();
+const ctrl    = require("../controllers/itemController");
 
-const itemController = require("../controllers/itemController");
+/* ── Multer: buffer дотор хадгалж Cloudinary руу upload хийнэ ── */
+const fileFilter = (_, file, cb) => {
+  const allowed = /jpeg|jpg|png|webp|gif/;
+  allowed.test(file.mimetype) ? cb(null, true) : cb(new Error("Зөвхөн зураг файл зөвшөөрнө"));
+};
 
-const storage = multer.diskStorage({
-destination:(req,file,cb)=>{
-cb(null,"uploads/");
-},
-filename:(req,file,cb)=>{
-cb(null,Date.now()+"-"+file.originalname);
-}
+const upload = multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+
+/* ── Routes ── */
+router.get   ("/",             ctrl.getItems);
+router.get   ("/stats",        ctrl.getStats);
+router.post  ("/claim-search", ctrl.claimSearch);
+router.post  ("/",             upload.single("image"), ctrl.createItem);
+router.put   ("/:id/status",   ctrl.updateStatus);
+router.delete("/:id",          ctrl.deleteItem);
+
+/* ── Multer алдаа ── */
+router.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") return res.status(400).json({ message: "Зураг 5MB-аас хэтэрч болохгүй" });
+  if (err.message)                    return res.status(400).json({ message: err.message });
+  next(err);
 });
-
-const upload = multer({storage});
-
-router.get("/", itemController.getItems);
-
-router.post("/", upload.single("image"), itemController.createItem);
-
-router.delete("/:id", itemController.deleteItem);
-
-// ⭐ STATUS
-router.put("/:id/status", itemController.updateStatus);
 
 module.exports = router;

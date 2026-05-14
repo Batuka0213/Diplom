@@ -1,44 +1,12 @@
 const express = require("express");
-const router = express.Router();
+const router  = express.Router();
+const ctrl    = require("../controllers/userController");
 
-const userController = require("../controllers/userController");
-
-
-// ============================
-// AUTH
-// ============================
-
-// register
-router.post("/register", userController.registerUser);
-
-// login
-router.post("/login", userController.loginUser);
-
-// 🔐 Google login
-router.post("/google-login", userController.googleLogin);
-
-
-// ============================
-// USERS
-// ============================
-
-// get all users
-router.get("/", userController.getUsers);
-
-
-// ============================
-// ⭐ LEADERBOARD
-// ============================
-
-router.get("/leaderboard", userController.getLeaderboard);
-
-
-// ============================
-// ⭐ ADD POINTS
-// ============================
-
-router.post("/points", userController.addPoints);
-
-
+router.post("/register",     ctrl.registerUser);
+router.post("/login",        ctrl.loginUser);
+router.post("/google-login", ctrl.googleLogin);
+router.post("/points",       ctrl.addPoints);
+router.get  ("/leaderboard", ctrl.getLeaderboard);
+router.get  ("/",            ctrl.getUsers);
 
 module.exports = router;
