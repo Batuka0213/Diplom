@@ -21,7 +21,7 @@ function ItemCard({ item, tab }) {
     <div className="item-card">
       <div className="card-img-wrap">
         <img
-          src={item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK}
+          src={item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK}
           className="card-img"
           alt={item.title}
           onError={e => { e.target.src = FALLBACK; }}

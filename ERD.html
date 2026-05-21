@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lost & Found — ERD Диаграм</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0f0f1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+      border-bottom: 1px solid rgba(99,102,241,0.3);
+      padding: 28px 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .header-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    }
+    .header-text h1 {
+      font-size: 22px; font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, #c4b5fd);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-text p { color: #94a3b8; font-size: 13px; margin-top: 3px; }
+
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 16px 40px;
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 12px; font-weight: 500; color: #94a3b8;
+    }
+    .legend-dot {
+      width: 11px; height: 11px; border-radius: 3px;
+    }
+
+    /* ── DIAGRAM AREA ── */
+    .diagram-wrap {
+      padding: 32px 20px;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ── Mermaid theme override ── */
+    .mermaid svg {
+      max-width: 100%;
+    }
+
+    /* ── ENTITY CARDS (manual) ── */
+    .entities-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      padding: 0 40px 40px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .entity-card {
+      background: #161627;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .entity-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .entity-header {
+      padding: 14px 18px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .entity-icon { font-size: 20px; }
+    .entity-name {
+      font-size: 15px; font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #fff;
+    }
+    .entity-collection {
+      font-size: 10.5px; color: rgba(255,255,255,0.5);
+      margin-top: 1px;
+    }
+
+    .entity-body { padding: 4px 0 12px; }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 18px;
+      font-size: 12.5px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      transition: background 0.14s;
+    }
+    .field-row:hover { background: rgba(255,255,255,0.03); }
+    .field-row:last-child { border-bottom: none; }
+
+    .field-badge {
+      font-size: 9.5px; font-weight: 700;
+      padding: 2px 5px; border-radius: 4px;
+      text-align: center; line-height: 1;
+    }
+    .badge-pk { background: #fef3c7; color: #92400e; }
+    .badge-fk { background: #dbeafe; color: #1e40af; }
+    .badge-em { background: #f0fdf4; color: #166534; }
+    .badge-in { background: #fdf2f8; color: #701a75; }
+
+    .field-name { color: #e2e8f0; font-weight: 500; }
+    .field-name.pk { color: #fbbf24; font-weight: 700; }
+    .field-name.fk { color: #60a5fa; }
+
+    .field-type { color: #64748b; font-size: 11.5px; text-align: right; }
+
+    /* Entity colors */
+    .user-header    { background: linear-gradient(135deg, #1e3a5f, #1e40af); }
+    .item-header    { background: linear-gradient(135deg, #14532d, #166534); }
+    .claim-header   { background: linear-gradient(135deg, #4c1d95, #6d28d9); }
+    .chat-header    { background: linear-gradient(135deg, #7c2d12, #c2410c); }
+
+    /* ── RELATIONS ── */
+    .relations-section {
+      max-width: 1300px;
+      margin: 0 auto 40px;
+      padding: 0 40px;
+    }
+    .relations-title {
+      font-size: 14px; font-weight: 700; color: #94a3b8;
+      margin-bottom: 14px;
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .relations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .relation-card {
+      background: #161627;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .rel-icon { font-size: 22px; }
+    .rel-info { flex: 1; }
+    .rel-name { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+    .rel-desc { font-size: 11.5px; color: #64748b; margin-top: 3px; }
+    .rel-badge {
+      font-size: 10px; font-weight: 800;
+      padding: 3px 8px; border-radius: 20px;
+      white-space: nowrap;
+    }
+    .rel-one-many   { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .rel-embedded   { background: rgba(16,185,129,0.15); color: #34d399; }
+
+    /* ── INDEXES ── */
+    .indexes-section {
+      max-width: 1300px;
+      margin: 0 auto 48px;
+      padding: 0 40px;
+    }
+    .indexes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    .index-card {
+      background: #161627;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px 18px;
+    }
+    .index-entity {
+      font-size: 11px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .index-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #94a3b8;
+      padding: 3px 0;
+    }
+    .index-item::before {
+      content: "⚡"; font-size: 11px;
+    }
+
+    .section-title {
+      font-size: 13px; font-weight: 700; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 16px;
+      padding: 0 40px;
+      max-width: 1300px;
+      margin-left: auto; margin-right: auto;
+      padding-left: 40px;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 32px 40px;
+    }
+
+    /* ── ERD SVG diagram ── */
+    .erd-svg-wrap {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 40px 32px;
+    }
+    .erd-svg-box {
+      background: #161627;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+    .erd-diagram {
+      display: flex;
+      gap: 48px;
+      align-items: flex-start;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .erd-col { display: flex; flex-direction: column; gap: 32px; }
+
+    /* Connector lines using SVG */
+    .connector-wrap { position: relative; }
+
+    /* Relationship arrows */
+    .rel-arrow {
+      display: flex; align-items: center; gap: 0;
+      font-size: 12px; color: #475569;
+      white-space: nowrap;
+    }
+    .rel-line {
+      flex: 1;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, #334155 0, #334155 6px, transparent 6px, transparent 10px);
+      min-width: 40px;
+    }
+    .rel-label {
+      font-size: 10.5px; font-weight: 600; color: #6366f1;
+      background: rgba(99,102,241,0.12);
+      padding: 2px 7px; border-radius: 10px;
+      margin: 0 6px;
+    }
+    .rel-end { color: #6366f1; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-icon">🔍</div>
+    <div class="header-text">
+      <h1>Lost &amp; Found — Мэдээллийн сангийн диаграм (ERD)</h1>
+      <p>MongoDB Atlas · Mongoose ODM · 4 Collection · Дипломын ажил — 2026</p>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#fbbf24"></div> PK — Primary Key (ObjectId)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#60a5fa"></div> FK — Foreign Key (ObjectId ref)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#34d399"></div> EM — Embedded Document
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#c084fc"></div> IDX — Index талбар
+    </div>
+    <div class="legend-item" style="margin-left:auto">
+      <span style="color:#64748b">1:N</span>&nbsp; нэг-олон харилцаа &nbsp;·&nbsp;
+      <span style="color:#64748b">●</span> заавал &nbsp;·&nbsp;
+      <span style="color:#64748b">○</span> нэмэлт
+    </div>
+  </div>
+
+  <!-- ENTITY CARDS -->
+  <div style="padding: 32px 40px 8px; max-width: 1300px; margin: 0 auto;">
+    <div class="relations-title">Entities (Collections)</div>
+  </div>
+
+  <div class="entities-grid">
+
+    <!-- USER -->
+    <div class="entity-card">
+      <div class="entity-header user-header">
+        <div class="entity-icon">👤</div>
+        <div>
+          <div class="entity-name">USER</div>
+          <div class="entity-collection">Collection: users</div>
+        </div>
+      </div>
+      <div class="entity-body">
+        <div class="field-row">
+          <span class="field-badge badge-pk">PK</span>
+          <span class="field-name pk">_id</span>
+          <span class="field-type">ObjectId</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">email</span>
+          <span class="field-type">String (unique)</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">name</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">password</span>
+          <span class="field-type">String (bcrypt)</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">role</span>
+          <span class="field-type">enum [user, admin]</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">points</span>
+          <span class="field-type">Number ≥ 0</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">googleId</span>
+          <span class="field-type">String?</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">picture</span>
+          <span class="field-type">String (URL)?</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">authProvider</span>
+          <span class="field-type">enum [local, google]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">studentCode</span>
+          <span class="field-type">String?</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">createdAt</span>
+          <span class="field-type">Date</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">updatedAt</span>
+          <span class="field-type">Date</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEM -->
+    <div class="entity-card">
+      <div class="entity-header item-header">
+        <div class="entity-icon">📦</div>
+        <div>
+          <div class="entity-name">ITEM</div>
+          <div class="entity-collection">Collection: items</div>
+        </div>
+      </div>
+      <div class="entity-body">
+        <div class="field-row">
+          <span class="field-badge badge-pk">PK</span>
+          <span class="field-name pk">_id</span>
+          <span class="field-type">ObjectId</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">title</span>
+          <span class="field-type">String [2–120]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">description</span>
+          <span class="field-type">String [≤2000]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">location</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">type</span>
+          <span class="field-type">enum [lost, found]</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">category</span>
+          <span class="field-type">enum [phone, key, bag…]</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">status</span>
+          <span class="field-type">enum [pending, returned]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">image</span>
+          <span class="field-type">String (URL)</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">contact</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-fk">FK</span>
+          <span class="field-name fk">createdBy</span>
+          <span class="field-type">ObjectId → User</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">viewCount</span>
+          <span class="field-type">Number</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">createdAt</span>
+          <span class="field-type">Date</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">updatedAt</span>
+          <span class="field-type">Date</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLAIM -->
+    <div class="entity-card">
+      <div class="entity-header claim-header">
+        <div class="entity-icon">🔐</div>
+        <div>
+          <div class="entity-name">CLAIM</div>
+          <div class="entity-collection">Collection: claims</div>
+        </div>
+      </div>
+      <div class="entity-body">
+        <div class="field-row">
+          <span class="field-badge badge-pk">PK</span>
+          <span class="field-name pk">_id</span>
+          <span class="field-type">ObjectId</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-fk">FK</span>
+          <span class="field-name fk">item</span>
+          <span class="field-type">ObjectId → Item</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">claimantName</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">claimantContact</span>
+          <span class="field-type">String (phone)</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">proofText</span>
+          <span class="field-type">String [≥20]</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">status</span>
+          <span class="field-type">enum [pending, approved, rejected]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">adminNote</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-em">EM</span>
+          <span class="field-name">messages[ ]</span>
+          <span class="field-type">Embedded Array</span>
+        </div>
+        <div class="field-row" style="padding-left:36px; background:rgba(16,185,129,0.04)">
+          <span></span>
+          <span class="field-name" style="color:#6ee7b7; font-size:11.5px">↳ sender</span>
+          <span class="field-type">enum [user, admin]</span>
+        </div>
+        <div class="field-row" style="padding-left:36px; background:rgba(16,185,129,0.04)">
+          <span></span>
+          <span class="field-name" style="color:#6ee7b7; font-size:11.5px">↳ text</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row" style="padding-left:36px; background:rgba(16,185,129,0.04)">
+          <span></span>
+          <span class="field-name" style="color:#6ee7b7; font-size:11.5px">↳ createdAt</span>
+          <span class="field-type">Date</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">createdAt</span>
+          <span class="field-type">Date</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">updatedAt</span>
+          <span class="field-type">Date</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT MESSAGE -->
+    <div class="entity-card">
+      <div class="entity-header chat-header">
+        <div class="entity-icon">💬</div>
+        <div>
+          <div class="entity-name">CHAT_MESSAGE</div>
+          <div class="entity-collection">Collection: chatmessages</div>
+        </div>
+      </div>
+      <div class="entity-body">
+        <div class="field-row">
+          <span class="field-badge badge-pk">PK</span>
+          <span class="field-name pk">_id</span>
+          <span class="field-type">ObjectId</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">room</span>
+          <span class="field-type">String (user_&lt;phone&gt;)</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">sender</span>
+          <span class="field-type">enum [user, admin]</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">name</span>
+          <span class="field-type">String</span>
+        </div>
+        <div class="field-row">
+          <span></span>
+          <span class="field-name">text</span>
+          <span class="field-type">String [≤500]</span>
+        </div>
+        <div class="field-row">
+          <span class="field-badge badge-in">IDX</span>
+          <span class="field-name">createdAt</span>
+          <span class="field-type">Date</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- RELATIONSHIPS -->
+  <div class="relations-section">
+    <div class="relations-title">Харилцаанууд (Relationships)</div>
+    <div class="relations-grid">
+
+      <div class="relation-card">
+        <div class="rel-icon">👤</div>
+        <div class="rel-info">
+          <div class="rel-name">User → Item</div>
+          <div class="rel-desc">Нэг хэрэглэгч олон зүйл бүртгэж болно<br><code style="font-size:10.5px;color:#818cf8">Item.createdBy → User._id</code></div>
+        </div>
+        <span class="rel-badge rel-one-many">1 : N</span>
+      </div>
+
+      <div class="relation-card">
+        <div class="rel-icon">📦</div>
+        <div class="rel-info">
+          <div class="rel-name">Item → Claim</div>
+          <div class="rel-desc">Нэг зүйлд олон хүсэлт гарч болно<br><code style="font-size:10.5px;color:#818cf8">Claim.item → Item._id</code></div>
+        </div>
+        <span class="rel-badge rel-one-many">1 : N</span>
+      </div>
+
+      <div class="relation-card">
+        <div class="rel-icon">💬</div>
+        <div class="rel-info">
+          <div class="rel-name">Claim → Messages[ ]</div>
+          <div class="rel-desc">Нэг хүсэлтэд олон мессеж хадгалагдана<br><code style="font-size:10.5px;color:#34d399">Embedded Array (denormalized)</code></div>
+        </div>
+        <span class="rel-badge rel-embedded">Embedded</span>
+      </div>
+
+      <div class="relation-card">
+        <div class="rel-icon">📞</div>
+        <div class="rel-info">
+          <div class="rel-name">ChatMessage (room-based)</div>
+          <div class="rel-desc">Утасны дугаараар өрөө тодорхойлно<br><code style="font-size:10.5px;color:#fb923c">room = "user_" + phone</code></div>
+        </div>
+        <span class="rel-badge" style="background:rgba(251,146,60,0.15);color:#fb923c">Implicit</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- INDEXES -->
+  <div class="indexes-section">
+    <div class="relations-title">Индексүүд (Database Indexes)</div>
+    <div class="indexes-grid">
+
+      <div class="index-card">
+        <div class="index-entity" style="color:#3b82f6">📦 Items Collection</div>
+        <div class="index-item">{ type: 1, status: 1, createdAt: -1 } — compound</div>
+        <div class="index-item">{ category: 1, type: 1 } — compound</div>
+        <div class="index-item">{ title: "text", description: "text", location: "text" } — full-text</div>
+      </div>
+
+      <div class="index-card">
+        <div class="index-entity" style="color:#6366f1">👤 Users Collection</div>
+        <div class="index-item">{ email: 1 } — unique index</div>
+        <div class="index-item">{ points: -1 } — leaderboard sort</div>
+        <div class="index-item">{ googleId: 1 } — sparse index</div>
+      </div>
+
+      <div class="index-card">
+        <div class="index-entity" style="color:#8b5cf6">🔐 Claims Collection</div>
+        <div class="index-item">{ item: 1 } — FK reference</div>
+        <div class="index-item">{ status: 1 } — filter by status</div>
+      </div>
+
+      <div class="index-card">
+        <div class="index-entity" style="color:#f97316">💬 ChatMessages Collection</div>
+        <div class="index-item">{ room: 1 } — room lookup</div>
+        <div class="index-item">{ room: 1, createdAt: 1 } — compound</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- MERMAID ERD -->
+  <div class="erd-svg-wrap">
+    <div class="relations-title">Мэдээллийн загварын харилцаа (Mermaid ERD)</div>
+    <div class="erd-svg-box">
+      <div class="mermaid">
+erDiagram
+    USER {
+        ObjectId _id PK
+        String   name
+        String   email    "unique"
+        String   password "bcrypt hashed"
+        String   role     "user | admin"
+        Number   points
+        String   googleId  "nullable"
+        String   picture   "URL nullable"
+        String   authProvider "local | google"
+        String   studentCode  "nullable"
+        Date     createdAt
+        Date     updatedAt
+    }
+
+    ITEM {
+        ObjectId _id        PK
+        String   title      "2-120 chars"
+        String   description "max 2000"
+        String   location
+        String   type       "lost | found"
+        String   category   "phone|key|bag|card|glasses|jewelry|other"
+        String   status     "pending | returned"
+        String   image      "URL or filename"
+        String   contact
+        ObjectId createdBy  FK
+        Number   viewCount
+        Date     createdAt
+        Date     updatedAt
+    }
+
+    CLAIM {
+        ObjectId _id             PK
+        ObjectId item            FK
+        String   claimantName
+        String   claimantContact "phone"
+        String   proofText       "min 20 chars"
+        String   status          "pending | approved | rejected"
+        String   adminNote
+        Array    messages        "embedded"
+        Date     createdAt
+        Date     updatedAt
+    }
+
+    CLAIM_MESSAGE {
+        String sender    "user | admin"
+        String text
+        Date   createdAt
+    }
+
+    CHAT_MESSAGE {
+        ObjectId _id       PK
+        String   room      "user_phone"
+        String   sender    "user | admin"
+        String   name
+        String   text      "max 500"
+        Date     createdAt
+    }
+
+    USER ||--o{ ITEM         : "бүртгэсэн (createdBy)"
+    ITEM ||--o{ CLAIM        : "хүсэлт ирсэн (item ref)"
+    CLAIM ||--|{ CLAIM_MESSAGE : "мессежүүд (embedded)"
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center; padding: 20px 40px 40px; color: #334155; font-size: 12px;">
+    Lost &amp; Found System · MongoDB Atlas · Node.js + Express · React · Socket.io · Дипломын ажил 2026
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor:        '#312e81',
+        primaryTextColor:    '#e2e8f0',
+        primaryBorderColor:  '#6366f1',
+        lineColor:           '#6366f1',
+        secondaryColor:      '#1e3a5f',
+        tertiaryColor:       '#14532d',
+        background:          '#161627',
+        mainBkg:             '#1e1b4b',
+        nodeBorder:          '#6366f1',
+        clusterBkg:          '#1e1b4b',
+        titleColor:          '#a5b4fc',
+        edgeLabelBackground: '#0f0f1a',
+        attributeBackgroundColorEven: '#1e1b4b',
+        attributeBackgroundColorOdd:  '#16163a',
+        fontFamily: 'Inter, sans-serif',
+        fontSize:   '13px',
+      },
+      er: {
+        diagramPadding:   40,
+        layoutDirection:  'TB',
+        minEntityWidth:   100,
+        minEntityHeight:  75,
+        entityPadding:    15,
+        useMaxWidth:      true,
+      },
+    });
+  </script>
+</body>
+</html>

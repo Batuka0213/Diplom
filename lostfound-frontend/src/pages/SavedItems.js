@@ -56,7 +56,7 @@ function SavedItems() {
 
             <div className="saved-grid">
               {items.map(item => {
-                const imgSrc = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
+                const imgSrc = item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
                 return (
                   <div className="saved-card" key={item._id}>
                     <div className="saved-img-wrap">

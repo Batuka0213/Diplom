@@ -16,11 +16,14 @@ import Archive     from "./pages/Archive";
 import SavedItems  from "./pages/SavedItems";
 import NotFound    from "./pages/NotFound";
 
-import Footer      from "./components/Footer";
-import ScrollToTop from "./components/ScrollToTop";
-import TopBar      from "./components/TopBar";
-import FAB         from "./components/FAB";
+import Footer           from "./components/Footer";
+import ScrollToTop      from "./components/ScrollToTop";
+import TopBar           from "./components/TopBar";
+import FAB             from "./components/FAB";
+import ChatWidget       from "./components/ChatWidget";
+import NewItemNotifier  from "./components/NewItemNotifier";
 
+import { LangProvider } from "./contexts/LangContext";
 import "./App.css";
 
 function App() {
@@ -31,6 +34,7 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ""}>
+    <LangProvider>
     <Router basename={process.env.NODE_ENV === "production" ? process.env.PUBLIC_URL : ""}>
       <TopBar />
       <Toaster
@@ -59,7 +63,10 @@ function App() {
       <Footer />
       <ScrollToTop />
       <FAB />
+      <ChatWidget />
+      <NewItemNotifier />
     </Router>
+    </LangProvider>
     </GoogleOAuthProvider>
   );
 }

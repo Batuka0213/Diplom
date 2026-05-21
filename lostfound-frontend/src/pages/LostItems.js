@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useSearchParams } from "react-router-dom";
+import socket from "../socket";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import SkeletonCard from "../components/SkeletonCard";
@@ -10,27 +11,24 @@ import Confetti from "../components/Confetti";
 import { saveDeleted, saveReturned } from "../utils/history";
 import { timeAgo } from "../utils/timeAgo";
 import { toggleLike, getLikedIds } from "../utils/likedItems";
+import { useLang } from "../contexts/LangContext";
+import ClaimSubmitModal from "../components/ClaimSubmitModal";
+import ClaimStatusModal from "../components/ClaimStatusModal";
 
 const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Crect x='150' y='95' width='100' height='82' rx='8' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='22' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='9' fill='%23d1d5db'/%3E%3Crect x='162' y='103' width='18' height='10' rx='3' fill='%23d1d5db'/%3E%3C/svg%3E";
 const PAGE_SIZE = 12;
 const API_URL  = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 const BASE_URL = API_URL.replace("/api", "");
 
-const STATUS_TABS = [
-  ["all",      "Бүгд"],
-  ["pending",  "⏳ Хүлээгдэж буй"],
-  ["returned", "✅ Буцаасан"],
-];
-
-const CATS = [
-  { key: "all",     label: "Бүгд",       icon: "🗂️" },
-  { key: "phone",   label: "Утас",       icon: "📱" },
-  { key: "key",     label: "Түлхүүр",    icon: "🔑" },
-  { key: "bag",     label: "Цүнх",       icon: "🎒" },
-  { key: "card",    label: "Карт",       icon: "💳" },
-  { key: "glasses", label: "Нүдний шил", icon: "👓" },
-  { key: "jewelry", label: "Гоёл",       icon: "💍" },
-  { key: "other",   label: "Бусад",      icon: "📦" },
+const CAT_KEYS = [
+  { key: "all",     icon: "🗂️" },
+  { key: "phone",   icon: "📱" },
+  { key: "key",     icon: "🔑" },
+  { key: "bag",     icon: "🎒" },
+  { key: "card",    icon: "💳" },
+  { key: "glasses", icon: "👓" },
+  { key: "jewelry", icon: "💍" },
+  { key: "other",   icon: "📦" },
 ];
 
 const inferCat = (title = "", desc = "") => {
@@ -51,9 +49,20 @@ const copyTel = (n) => {
 };
 
 function LostItems() {
+  const { t } = useLang();
+  const lostT = t("lost");
+  const catsT = t("cats");
+  const CATS = CAT_KEYS.map(c => ({ ...c, label: catsT[c.key] || c.key }));
+  const STATUS_TABS = [
+    ["all",      lostT.all],
+    ["pending",  `⏳ ${lostT.pending}`],
+    ["returned", `✅ ${lostT.returned}`],
+  ];
+
   const [searchParams] = useSearchParams();
   const [items,    setItems]    = useState([]);
   const [search,   setSearch]   = useState(searchParams.get("q") || "");
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get("q") || "");
   const [status,   setStatus]   = useState("all");
   const [cat,      setCat]      = useState("all");
   const [sort,     setSort]     = useState("newest");
@@ -63,20 +72,56 @@ function LostItems() {
   const [lightbox, setLightbox] = useState(null);
   const [confetti, setConfetti] = useState(false);
   const [confirm,  setConfirm]  = useState({ open: false, id: null, action: null });
+  const [finderTargetItem, setFinderTargetItem] = useState(null);
+  const [showClaimStatus,  setShowClaimStatus]  = useState(false);
 
-  useEffect(() => { loadItems(); }, []);
+  const currentUser = (() => { try { return JSON.parse(localStorage.getItem("user")); } catch { return null; } })();
+  const isAdmin = currentUser?.role === "admin";
 
-  const loadItems = async () => {
-    try {
-      const res  = await axios.get(`${API_URL}/items`);
+  // Debounce search input — 300ms delay
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Server-side fetch when debounced search or status changes
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ type: "lost" });
+        if (debouncedSearch.trim()) params.set("q", debouncedSearch.trim());
+        if (status !== "all")       params.set("status", status);
+
+        const res  = await axios.get(`${API_URL}/items?${params}`);
+        if (cancelled) return;
+        const liked = getLikedIds();
+        setItems(res.data.map(i => ({ ...i, liked: liked.has(i._id) })));
+        setVisible(PAGE_SIZE);
+      } catch {
+        if (!cancelled) toast.error("Мэдээлэл ачаалахад алдаа гарлаа");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedSearch, status]);
+
+  // Real-time: шинэ зүйл бүртгэгдэхэд автоматаар нэмэх
+  useEffect(() => {
+    const handler = (item) => {
+      if (item.type !== "lost") return;
       const liked = getLikedIds();
-      setItems(res.data.map(i => ({ ...i, liked: liked.has(i._id) })));
-    } catch {
-      toast.error("Мэдээлэл ачаалахад алдаа гарлаа");
-    } finally {
-      setLoading(false);
-    }
-  };
+      setItems(prev => {
+        if (prev.find(i => i._id === item._id)) return prev;
+        return [{ ...item, liked: liked.has(item._id) }, ...prev];
+      });
+      setVisible(v => v + 1);
+    };
+    socket.on("new_item", handler);
+    return () => socket.off("new_item", handler);
+  }, []);
 
   const openConfirm  = (id, action) => setConfirm({ open: true, id, action });
   const closeConfirm = () => setConfirm({ open: false, id: null, action: null });
@@ -104,7 +149,7 @@ function LostItems() {
     const item = items.find(i => i._id === id);
     const tid  = toast.loading("Тэмдэглэж байна...");
     if (item) saveReturned(item);
-    try { await axios.put(`${API_URL}/items/${id}`, { status: "returned" }); } catch {}
+    try { await axios.put(`${API_URL}/items/${id}/status`, { status: "returned" }); } catch {}
     setItems(prev => prev.map(i => i._id === id ? { ...i, status: "returned" } : i));
     toast.success("✅ Эзэндэн хүрсэн! Архивд нэмэгдлээ 📚", { id: tid });
     setConfetti(true);
@@ -118,15 +163,9 @@ function LostItems() {
     toast(nowLiked ? "❤️ Хадгалагдлаа" : "Хадгалсанаас хасагдлаа", { duration: 1300 });
   };
 
+  // Client-side: category filter + sort (server returns newest-first)
   const filtered = items
-    .filter(i => i.type?.toLowerCase() === "lost")
-    .filter(i => status === "all" || i.status === status)
     .filter(i => cat === "all" || (i.category || inferCat(i.title, i.description)) === cat)
-    .filter(i =>
-      i.title?.toLowerCase().includes(search.toLowerCase()) ||
-      i.description?.toLowerCase().includes(search.toLowerCase()) ||
-      i.location?.toLowerCase().includes(search.toLowerCase())
-    )
     .sort((a, b) => {
       if (sort === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
       if (sort === "oldest") return new Date(a.createdAt) - new Date(b.createdAt);
@@ -159,57 +198,82 @@ function LostItems() {
         onCancel={closeConfirm}
       />
 
+      {finderTargetItem && (
+        <ClaimSubmitModal item={finderTargetItem} mode="finder" onClose={() => setFinderTargetItem(null)} />
+      )}
+      {showClaimStatus && <ClaimStatusModal onClose={() => setShowClaimStatus(false)} />}
+
       <div className="page-container">
-        <div className="page-header">
-          <h1>🔴 Хаясан зүйлс</h1>
-          <p>Хайж байгаа зүйлээ олоорой</p>
-        </div>
+        <div className="page-header-block">
 
-        <div className="search-bar">
-          <div className="search-input-wrap">
-            <span className="search-icon">🔍</span>
-            <input
-              placeholder="Хайх... (нэр, байршил, тайлбар)"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setVisible(PAGE_SIZE); }}
-            />
+          {/* Title */}
+          <div className="page-header">
+            <h1>🔴 {lostT.title}</h1>
+            {!isAdmin && (
+              <button className="btn-claim-trigger btn-status-trigger" onClick={() => setShowClaimStatus(true)}>
+                <span className="claim-trigger-icon">📋</span>
+                <span>Хүсэлтийн байдал</span>
+              </button>
+            )}
           </div>
-        </div>
 
-        {/* Category chips */}
-        <div className="cat-chips">
-          {CATS.map(c => (
-            <button
-              key={c.key}
-              className={`cat-chip${cat === c.key ? " active" : ""}`}
-              onClick={() => { setCat(c.key); setVisible(PAGE_SIZE); }}
-            >
-              <span>{c.icon}</span> {c.label}
-            </button>
-          ))}
-        </div>
+          {/* Search */}
+          <div className="search-bar">
+            <div className="search-input-wrap">
+              <span className="search-icon">🔍</span>
+              <input
+                placeholder={lostT.searchPlaceholder}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  className="search-clear"
+                  onClick={() => setSearch("")}
+                  title="Цэвэрлэх"
+                  aria-label="Хайлт цэвэрлэх"
+                >✕</button>
+              )}
+            </div>
+          </div>
 
-        <div className="filter-bar">
-          <div className="filter-tabs">
-            {STATUS_TABS.map(([val, label]) => (
-              <button key={val} className={`filter-tab${status === val ? " active" : ""}`}
-                onClick={() => { setStatus(val); setVisible(PAGE_SIZE); }}>
-                {label}
+          {/* Category chips */}
+          <div className="cat-chips" style={{ marginBottom: 0 }}>
+            {CATS.map(c => (
+              <button
+                key={c.key}
+                className={`cat-chip${cat === c.key ? " active" : ""}`}
+                onClick={() => { setCat(c.key); setVisible(PAGE_SIZE); }}
+              >
+                <span>{c.icon}</span> {c.label}
               </button>
             ))}
           </div>
-          <div className="filter-right">
-            {!loading && <span className="result-count">{filtered.length} илэрц</span>}
-            <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
-              <option value="newest">Шинэ эхлээд</option>
-              <option value="oldest">Хуучин эхлээд</option>
-              <option value="az">А — Я</option>
-            </select>
-            <div className="view-toggle">
-              <button className={`view-btn${view === "grid" ? " active" : ""}`} onClick={() => setView("grid")} title="Grid харагдац">⊞</button>
-              <button className={`view-btn${view === "list" ? " active" : ""}`} onClick={() => setView("list")} title="Жагсаалт харагдац">☰</button>
+
+          {/* Filter + sort */}
+          <div className="filter-bar" style={{ marginBottom: 0 }}>
+            <div className="filter-tabs">
+              {STATUS_TABS.map(([val, label]) => (
+                <button key={val} className={`filter-tab${status === val ? " active" : ""}`}
+                  onClick={() => setStatus(val)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="filter-right">
+              {!loading && <span className="result-count">{filtered.length} илэрц</span>}
+              <select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
+                <option value="newest">{t("sort").newest}</option>
+                <option value="oldest">{t("sort").oldest}</option>
+                <option value="az">{t("sort").az}</option>
+              </select>
+              <div className="view-toggle">
+                <button className={`view-btn${view === "grid" ? " active" : ""}`} onClick={() => setView("grid")} title="Grid харагдац">⊞</button>
+                <button className={`view-btn${view === "list" ? " active" : ""}`} onClick={() => setView("list")} title="Жагсаалт харагдац">☰</button>
+              </div>
             </div>
           </div>
+
         </div>
 
         {loading ? (
@@ -219,14 +283,13 @@ function LostItems() {
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🔍</div>
-            <h3>Илэрц олдсонгүй</h3>
-            <p>Хайлтаа өөрчилж үзнэ үү</p>
+            <h3>{lostT.noItems}</h3>
           </div>
         ) : (
           <>
             <div className={view === "list" ? "item-list" : "item-grid"}>
               {visible_items.map(item => {
-                const imgSrc = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
+                const imgSrc = item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
                 return (
                   <div className={view === "list" ? "item-row" : "item-card"} key={item._id}>
                     <div className="card-img-wrap">
@@ -238,7 +301,7 @@ function LostItems() {
                         onClick={() => setLightbox(imgSrc)}
                         title="Дарж томруулж харах"
                       />
-                      <span className="card-type-badge lost">Хаясан</span>
+                      <span className="card-type-badge lost">{t("item").lost}</span>
                       {isNew(item.createdAt) && <span className="new-badge">✨ Шинэ</span>}
                     </div>
                     <div className="card-body">
@@ -258,10 +321,22 @@ function LostItems() {
                         <button className={`btn-icon${item.liked ? " liked" : ""}`} onClick={() => likeItem(item._id)} title="Хадгалах">
                           {item.liked ? "❤️" : "🤍"}
                         </button>
-                        {item.status !== "returned" && (
+                        {/* Зөвхөн admin: буцаасан тэмдэглэх, устгах */}
+                        {isAdmin && item.status !== "returned" && (
                           <button className="btn-icon returned" onClick={() => openConfirm(item._id, "returned")} title="Эзэндэн хүрсэн">✅</button>
                         )}
-                        <button className="btn-icon delete" onClick={() => openConfirm(item._id, "delete")} title="Устгах">🗑</button>
+                        {isAdmin && (
+                          <button className="btn-icon delete" onClick={() => openConfirm(item._id, "delete")} title="Устгах">🗑</button>
+                        )}
+                        {/* Энгийн хэрэглэгч: олсон гэж мэдэгдэх */}
+                        {!isAdmin && item.status !== "returned" && (
+                          <button
+                            className="btn-icon"
+                            style={{ fontSize: 13, padding: "4px 8px", background: "#fef3c7", color: "#92400e", border: "1px solid #fde68a", borderRadius: 6 }}
+                            onClick={() => setFinderTargetItem(item)}
+                            title="Би уг зүйлийг олсон"
+                          >📬 Олсон</button>
+                        )}
                       </div>
                     </div>
                   </div>

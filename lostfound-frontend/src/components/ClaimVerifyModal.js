@@ -213,7 +213,7 @@ export default function ClaimVerifyModal({ onClose }) {
                   {results.map((item, idx) => {
                     const pct = Math.round(item.score * 100);
                     const tier = pct >= 70 ? "high" : pct >= 40 ? "mid" : "low";
-                    const imgSrc = item.image ? (item.image.startsWith("http") ? item.image : `${IMG_BASE}/uploads/${item.image}`) : FALLBACK;
+                    const imgSrc = item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${IMG_BASE}/uploads/${item.image}`) : FALLBACK;
                     return (
                       <div key={item._id} className={`claim-card claim-card--${tier}`} style={{ animationDelay: `${idx * 60}ms` }}>
                         <div className="claim-card-rank">{idx + 1}</div>

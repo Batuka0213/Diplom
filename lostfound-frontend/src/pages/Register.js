@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
 function Register() {
   const [form,    setForm]    = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ function Register() {
     setLoading(true);
     setError("");
     try {
-      await axios.post("http://localhost:5000/api/users/register", form);
+      await axios.post(`${API_URL}/users/register`, form);
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Бүртгэлийн алдаа гарлаа");
@@ -27,10 +29,11 @@ function Register() {
   const handleGoogleSuccess = async (credentialResponse) => {
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/users/google-login", {
+      const res = await axios.post(`${API_URL}/users/google-login`, {
         credential: credentialResponse.credential,
       });
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user",  JSON.stringify(res.data.user));
       navigate(res.data.user.role === "admin" ? "/admin" : "/home");
     } catch (err) {
       setError(err.response?.data?.message || "Google бүртгэл амжилтгүй болсон");

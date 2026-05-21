@@ -36,7 +36,8 @@ exports.registerUser = async (req, res) => {
     });
 
     const token = signToken(user);
-    res.status(201).json({ message: "Амжилттай бүртгэгдлээ", user, token });
+    const { password: _, ...safeUser } = user.toObject();
+    res.status(201).json({ message: "Амжилттай бүртгэгдлээ", user: safeUser, token });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ message: "Энэ email аль хэдийн бүртгэгдсэн байна" });
     console.error("[register]", err.message);
@@ -78,7 +79,8 @@ exports.loginUser = async (req, res) => {
     if (!valid) return res.status(401).json({ message: "Нууц үг буруу байна" });
 
     const token = signToken(user);
-    res.json({ message: "Нэвтэрлээ", user, token });
+    const { password: _, ...safeUser } = user.toObject();
+    res.json({ message: "Нэвтэрлээ", user: safeUser, token });
   } catch (err) {
     console.error("[login]", err.message);
     res.status(500).json({ message: "Нэвтрэхэд алдаа гарлаа" });
@@ -116,7 +118,8 @@ exports.googleLogin = async (req, res) => {
     }
 
     const token = signToken(user);
-    res.json({ message: "Google нэвтрэлт амжилттай", user, token });
+    const { password: _, ...safeUser } = user.toObject();
+    res.json({ message: "Google нэвтрэлт амжилттай", user: safeUser, token });
   } catch (err) {
     console.error("[googleLogin]", err.message);
     res.status(500).json({ message: "Google баталгаажуулалт амжилтгүй болсон" });
@@ -141,10 +144,10 @@ exports.getUsers = async (req, res) => {
 ───────────────────────────────────────── */
 exports.getLeaderboard = async (req, res) => {
   try {
-    const users = await User.find({ points: { $gt: 0 } })
-      .select("name email picture points")
-      .sort({ points: -1 })
-      .limit(20)
+    const users = await User.find()
+      .select("name email picture points role")
+      .sort({ points: -1, createdAt: 1 })
+      .limit(50)
       .lean();
     res.json(users);
   } catch (err) {

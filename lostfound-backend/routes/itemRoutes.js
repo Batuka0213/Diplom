@@ -1,7 +1,8 @@
-const express = require("express");
-const multer  = require("multer");
-const router  = express.Router();
-const ctrl    = require("../controllers/itemController");
+const express      = require("express");
+const multer       = require("multer");
+const router       = express.Router();
+const ctrl         = require("../controllers/itemController");
+const { auth }     = require("../middleware/auth");
 
 /* ── Multer: buffer дотор хадгалж Cloudinary руу upload хийнэ ── */
 const fileFilter = (_, file, cb) => {
@@ -15,7 +16,9 @@ const upload = multer({ storage: multer.memoryStorage(), fileFilter, limits: { f
 router.get   ("/",             ctrl.getItems);
 router.get   ("/stats",        ctrl.getStats);
 router.post  ("/claim-search", ctrl.claimSearch);
-router.post  ("/",             upload.single("image"), ctrl.createItem);
+router.post  ("/",             auth, upload.single("image"), ctrl.createItem);  // нэвтрэлт шаардлагатай
+router.get   ("/:id/similar",  ctrl.getSimilarItems);
+router.get   ("/:id",          ctrl.getItemById);
 router.put   ("/:id/status",   ctrl.updateStatus);
 router.delete("/:id",          ctrl.deleteItem);
 

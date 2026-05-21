@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -12,6 +12,14 @@ function AddItem() {
   const [loading,    setLoading]    = useState(false);
   const [showMap,    setShowMap]    = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (!user) {
+      toast.error("Зүйл нэмэхийн тулд нэвтэрнэ үү");
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 

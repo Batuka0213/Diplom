@@ -1,6 +1,16 @@
 const Item       = require("../models/Item");
 const cloudinary = require("../config/cloudinary");
 
+const isCloudinaryReady = () => {
+  const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
+  return (
+    CLOUDINARY_CLOUD_NAME &&
+    CLOUDINARY_CLOUD_NAME !== "your_cloud_name" &&
+    CLOUDINARY_API_KEY    !== "your_api_key" &&
+    CLOUDINARY_API_SECRET !== "your_api_secret"
+  );
+};
+
 /* ─────────────────────────────────────────
    GET /api/items
    Query: ?type=lost|found  &status=pending|returned  &category=...  &q=...
@@ -41,13 +51,21 @@ exports.createItem = async (req, res) => {
 
     let imageUrl = "";
     if (req.file) {
-      imageUrl = await new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: "lostfound", resource_type: "image" },
-          (error, result) => error ? reject(error) : resolve(result.secure_url)
-        );
-        stream.end(req.file.buffer);
-      });
+      if (isCloudinaryReady()) {
+        imageUrl = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: "lostfound", resource_type: "image" },
+            (error, result) => error ? reject(error) : resolve(result.secure_url)
+          );
+          stream.end(req.file.buffer);
+        });
+      } else {
+        // Cloudinary тохиргоогүй үед base64 болгон MongoDB-д шууд хадгална
+        // (Render-ийн ephemeral disk-т найдахгүй, ямар ч сервер дээр ажиллана)
+        const mime   = req.file.mimetype || "image/jpeg";
+        const b64    = req.file.buffer.toString("base64");
+        imageUrl     = `data:${mime};base64,${b64}`;
+      }
     }
 
     const item = await Item.create({
@@ -58,7 +76,12 @@ exports.createItem = async (req, res) => {
       contact:     contact?.trim()     || "",
       category:    category            || "",
       image:       imageUrl,
+      createdBy:   req.user?.id        || null,
     });
+
+    // Бүх клиентэд шинэ зүйл нэмэгдсэн мэдэгдэл илгээх
+    const io = req.app.get("io");
+    if (io) io.emit("new_item", item);
 
     res.status(201).json(item);
   } catch (err) {
@@ -161,6 +184,72 @@ exports.claimSearch = async (req, res) => {
   } catch (err) {
     console.error("[claimSearch]", err.message);
     res.status(500).json({ message: "Хайлтад алдаа гарлаа" });
+  }
+};
+
+/* ─────────────────────────────────────────
+   GET /api/items/:id
+   Нэг item ID-аар авах
+───────────────────────────────────────── */
+exports.getItemById = async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ message: "Зүйл олдсонгүй" });
+    res.json(item);
+  } catch (err) {
+    console.error("[getItemById]", err.message);
+    res.status(500).json({ message: "Мэдээлэл авахад алдаа гарлаа" });
+  }
+};
+
+/* ─────────────────────────────────────────
+   GET /api/items/:id/similar
+   AI-тохирох зүйлс (keyword scoring)
+───────────────────────────────────────── */
+exports.getSimilarItems = async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id).lean();
+    if (!item) return res.status(404).json({ message: "Зүйл олдсонгүй" });
+
+    const oppositeType = item.type === "lost" ? "found" : "lost";
+    const tokens = ((item.title || "") + " " + (item.description || ""))
+      .toLowerCase()
+      .replace(/[^\w\sа-яөүёА-ЯӨҮЁ]/gu, " ")
+      .split(/\s+/)
+      .filter(w => w.length > 1)
+      .slice(0, 15);
+
+    if (!tokens.length) return res.json([]);
+
+    const filter = { type: oppositeType, status: "pending", _id: { $ne: item._id } };
+    if (item.category) filter.category = item.category;
+
+    const candidates = await Item.find(filter).sort({ createdAt: -1 }).limit(60).lean();
+
+    const titleWeight = 3, descWeight = 1.5, locWeight = 1;
+    const maxPossible = tokens.length * (titleWeight + descWeight + locWeight);
+
+    const scored = candidates
+      .map(c => {
+        const titleToks = (c.title       || "").toLowerCase().split(/\s+/);
+        const descToks  = (c.description || "").toLowerCase().split(/\s+/);
+        const locToks   = (c.location    || "").toLowerCase().split(/\s+/);
+        let raw = 0;
+        for (const kw of tokens) {
+          if (titleToks.some(t => t.includes(kw))) raw += titleWeight;
+          if (descToks .some(t => t.includes(kw))) raw += descWeight;
+          if (locToks  .some(t => t.includes(kw))) raw += locWeight;
+        }
+        return { ...c, score: maxPossible ? (raw / maxPossible) * 10 : 0 };
+      })
+      .filter(i => i.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+
+    res.json(scored);
+  } catch (err) {
+    console.error("[getSimilarItems]", err.message);
+    res.status(500).json({ message: "Алдаа гарлаа" });
   }
 };
 

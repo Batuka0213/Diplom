@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const API_URL  = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+const BASE_URL = API_URL.replace("/api", "");
+const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%23f3f4f6' rx='8'/%3E%3Crect x='25' y='18' width='30' height='25' rx='4' fill='none' stroke='%23d1d5db' stroke-width='2'/%3E%3Ccircle cx='40' cy='31' r='7' fill='none' stroke='%23d1d5db' stroke-width='2'/%3E%3C/svg%3E";
 
 const STATUS_MAP = {
   pending:  { label: "Хүлээгдэж байна", cls: "pending",  icon: "⏳" },
@@ -155,14 +157,30 @@ export default function ClaimStatusModal({ onClose }) {
             <div className="claim-status-list">
               {claims.map(claim => {
                 const s = STATUS_MAP[claim.status] || STATUS_MAP.pending;
+                const img = claim.item?.image
+                  ? (claim.item.image.startsWith("http") || claim.item.image.startsWith("data:") ? claim.item.image : `${BASE_URL}/uploads/${claim.item.image}`)
+                  : FALLBACK;
                 return (
                   <div key={claim._id} className={`claim-status-item csi-${claim.status}`}>
                     <div className="csi-top">
-                      <div className="csi-title">{claim.item?.title || "—"}</div>
+                      <img
+                        src={img}
+                        alt={claim.item?.title || ""}
+                        onError={e => { e.target.src = FALLBACK; }}
+                        style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0 }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="csi-title">{claim.item?.title || "—"}</div>
+                        {claim.item?.location && (
+                          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
+                            📍 {claim.item.location}
+                          </div>
+                        )}
+                      </div>
                       <span className={`status-badge ${s.cls}`}>{s.icon} {s.label}</span>
                     </div>
                     <div className="csi-date">
-                      {new Date(claim.createdAt).toLocaleDateString("mn-MN")} — хүсэлт илгээгдсэн
+                      {new Date(claim.createdAt).toLocaleDateString("mn-MN", { year: "numeric", month: "long", day: "numeric" })} — хүсэлт илгээгдсэн
                     </div>
                     <MessageThread claim={claim} onMessageSent={handleMessageSent} />
                   </div>

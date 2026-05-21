@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
 
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
 function Login() {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -15,8 +17,9 @@ function Login() {
     setLoading(true);
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/users/login", { email, password });
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      const res = await axios.post(`${API_URL}/users/login`, { email, password });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user",  JSON.stringify(res.data.user));
       navigate(res.data.user.role === "admin" ? "/admin" : "/home");
     } catch (err) {
       setError(err.response?.data?.message || "Нэвтрэх үед алдаа гарлаа");
@@ -27,10 +30,11 @@ function Login() {
   const handleGoogleSuccess = async (credentialResponse) => {
     setError("");
     try {
-      const res = await axios.post("http://localhost:5000/api/users/google-login", {
+      const res = await axios.post(`${API_URL}/users/google-login`, {
         credential: credentialResponse.credential,
       });
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user",  JSON.stringify(res.data.user));
       navigate(res.data.user.role === "admin" ? "/admin" : "/home");
     } catch (err) {
       setError(err.response?.data?.message || "Google нэвтрэлт амжилтгүй болсон");

@@ -22,25 +22,18 @@ function ItemDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [item,    setItem]    = useState(null);
-  const [similar, setSimilar] = useState([]);
   const [lightbox, setLightbox] = useState(null);
   const [liked,   setLiked]   = useState(false);
 
   useEffect(() => {
-    axios.get(`${API_URL}/items`)
+    axios.get(`${API_URL}/items/${id}`)
       .then(res => {
-        const found = res.data.find(i => i._id === id);
-        setItem(found);
-        if (found) {
-          addRecentlyViewed(found);
-          setLiked(isLiked(found._id));
-        }
+        setItem(res.data);
+        addRecentlyViewed(res.data);
+        setLiked(isLiked(res.data._id));
       })
       .catch(console.log);
 
-    axios.get(`${API_URL}/items/${id}/similar`)
-      .then(res => setSimilar(res.data))
-      .catch(() => {});
   }, [id]);
 
   const handleLike = () => {
@@ -71,7 +64,7 @@ function ItemDetail() {
     </div>
   );
 
-  const imgSrc  = item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
+  const imgSrc  = item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
   const contact = item.contact || "86788622";
 
   return (
@@ -83,23 +76,6 @@ function ItemDetail() {
       )}
 
       <div className="detail-page">
-
-        <div className="detail-top-actions">
-          <button className="btn btn-outline detail-back" onClick={() => navigate(-1)}>
-            ← Буцах
-          </button>
-          <div className="detail-share-row">
-            <button className={`btn-icon${liked ? " liked" : ""}`} onClick={handleLike} title="Хадгалах">
-              {liked ? "❤️" : "🤍"}
-            </button>
-            <button className="btn btn-outline detail-share-btn" onClick={handleShare} title="Хуваалцах">
-              🔗 Хуваалцах
-            </button>
-            <button className="btn btn-outline detail-print-btn" onClick={handlePrint} title="Хэвлэх">
-              🖨️ Хэвлэх
-            </button>
-          </div>
-        </div>
 
         <div className="detail-card">
           <div className="detail-img-wrap">
@@ -154,6 +130,18 @@ function ItemDetail() {
                 </div>
               </div>
             </div>
+
+            <div className="detail-share-row">
+              <button className={`btn-icon${liked ? " liked" : ""}`} onClick={handleLike} title="Хадгалах">
+                {liked ? "❤️" : "🤍"}
+              </button>
+              <button className="btn btn-outline detail-share-btn" onClick={handleShare} title="Хуваалцах">
+                🔗 Хуваалцах
+              </button>
+              <button className="btn btn-outline detail-print-btn" onClick={handlePrint} title="Хэвлэх">
+                🖨️ Хэвлэх
+              </button>
+            </div>
           </div>
         </div>
 
@@ -177,41 +165,6 @@ function ItemDetail() {
           </div>
         )}
 
-        {similar.length > 0 && (
-          <div className="similar-section">
-            <h3>🤖 AI санал болгох зүйлс</h3>
-            <div className="item-grid">
-              {similar.map(s => {
-                const sImg = s.image ? (s.image.startsWith("http") ? s.image : `${BASE_URL}/uploads/${s.image}`) : FALLBACK;
-                return (
-                  <div className="item-card" key={s._id}>
-                    <div className="card-img-wrap">
-                      <img
-                        src={sImg}
-                        className="card-img clickable-img"
-                        alt={s.title}
-                        onError={e => { e.target.src = FALLBACK; }}
-                        onClick={() => setLightbox(sImg)}
-                      />
-                    </div>
-                    <div className="card-body">
-                      <Link to={`/item/${s._id}`} className="card-title">{s.title}</Link>
-                      <div className="card-meta">
-                        <span>📍 {s.location}</span>
-                        <span style={{
-                          color: s.score > 8 ? "#15803d" : s.score > 4 ? "#b45309" : "#b91c1c",
-                          fontWeight: 600,
-                        }}>
-                          🤖 AI оноо: {s.score?.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

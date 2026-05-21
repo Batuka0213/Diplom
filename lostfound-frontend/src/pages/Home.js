@@ -84,14 +84,9 @@ function Home() {
 
         <div className="hero-content">
           <h1>
-            Lost &amp; Found зүйлсийг<br />
+            Хаясан Олсон зүйлсийг<br />
             <span>эзэнтэй нь</span> холбоно
           </h1>
-          <p>
-            Хаясан болон олсон эд зүйлсийг бүртгэж, AI технологийн тусламжтайгаар
-            эзнийг нь хурдан олоход туслана.
-          </p>
-
           <form className="hero-search" onSubmit={handleSearch}>
             <div className="hero-search-wrap">
               <span className="hero-search-icon">
@@ -288,7 +283,7 @@ function Home() {
             {recent.map(item => (
               <Link to={`/item/${item._id}`} key={item._id} className="recent-item">
                 <img
-                  src={item.image ? (item.image.startsWith("http") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK}
+                  src={item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK}
                   alt={item.title}
                   onError={e => { e.target.src = FALLBACK; }}
                 />

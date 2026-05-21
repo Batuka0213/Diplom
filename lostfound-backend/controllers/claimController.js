@@ -19,9 +19,6 @@ exports.submitClaim = async (req, res) => {
     if (!item)
       return res.status(404).json({ message: "Зүйл олдсонгүй" });
 
-    if (item.type !== "found")
-      return res.status(400).json({ message: "Зөвхөн 'олдсон' зүйлд хүсэлт гаргаж болно" });
-
     if (item.status === "returned")
       return res.status(400).json({ message: "Энэ зүйл аль хэдийн эзэндээ хүрсэн" });
 
