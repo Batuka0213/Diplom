@@ -616,13 +616,29 @@ function Admin() {
                       <div className="aclaim-actions">
                         {noteFor?.id === claim._id ? (
                           <div className="admin-note-form">
-                            <textarea
-                              className="admin-note-input"
-                              value={noteText}
-                              onChange={e => setNoteText(e.target.value)}
-                              placeholder="Хэрэглэгчид илгээх хариу мессеж бичнэ үү (заавал биш)..."
-                              rows={2}
-                            />
+                            <div style={{ position: "relative" }}>
+                              <textarea
+                                className="admin-note-input"
+                                value={noteText}
+                                onChange={e => setNoteText(e.target.value)}
+                                placeholder="Хэрэглэгчид илгээх хариу мессеж бичнэ үү (заавал биш)..."
+                                rows={2}
+                                style={{ paddingRight: 36 }}
+                              />
+                              {noteText && (
+                                <button
+                                  type="button"
+                                  title="Арилгах"
+                                  onClick={() => setNoteText("")}
+                                  style={{
+                                    position: "absolute", top: 8, right: 8,
+                                    background: "none", border: "none", cursor: "pointer",
+                                    color: "var(--muted)", fontSize: 16, lineHeight: 1,
+                                    padding: "2px 4px", borderRadius: 4,
+                                  }}
+                                >✕</button>
+                              )}
+                            </div>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button
                                 className="btn"
