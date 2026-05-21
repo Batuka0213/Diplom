@@ -281,7 +281,7 @@ function Home() {
           </div>
           <div className="recent-list">
             {recent.map(item => (
-              <Link to={`/item/${item._id}`} key={item._id} className="recent-item">
+              <Link to={`/item/${item._id}`} state={{ item }} key={item._id} className="recent-item">
                 <img
                   src={item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK}
                   alt={item.title}

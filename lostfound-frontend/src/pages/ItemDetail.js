@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import Lightbox from "../components/Lightbox";
@@ -19,22 +19,42 @@ const copyContact = (num) => {
 };
 
 function ItemDetail() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [item,    setItem]    = useState(null);
-  const [lightbox, setLightbox] = useState(null);
-  const [liked,   setLiked]   = useState(false);
+  const { id }       = useParams();
+  const navigate     = useNavigate();
+  const location     = useLocation();
 
-  useEffect(() => {
+  // Жагсаалтаас дарж орсон бол state-р item авна → шууд харагдана
+  const [item,     setItem]     = useState(location.state?.item || null);
+  const [loading,  setLoading]  = useState(!location.state?.item);
+  const [error,    setError]    = useState(null);
+  const [lightbox, setLightbox] = useState(null);
+  const [liked,    setLiked]    = useState(false);
+
+  const fetchItem = useCallback(() => {
+    setLoading(true);
+    setError(null);
     axios.get(`${API_URL}/items/${id}`)
       .then(res => {
         setItem(res.data);
         addRecentlyViewed(res.data);
         setLiked(isLiked(res.data._id));
+        setLoading(false);
       })
-      .catch(console.log);
-
+      .catch(() => {
+        setError("Мэдээлэл ачаалахад алдаа гарлаа. Render server унтаж байж болзошгүй.");
+        setLoading(false);
+      });
   }, [id]);
+
+  useEffect(() => {
+    // State-р item ирсэн ч ID тохирч байвал зөвхөн liked state-г тохируулна
+    if (location.state?.item && location.state.item._id === id) {
+      setLiked(isLiked(id));
+      addRecentlyViewed(location.state.item);
+      return;
+    }
+    fetchItem();
+  }, [id, fetchItem, location.state]);
 
   const handleLike = () => {
     if (!item) return;
@@ -46,9 +66,8 @@ function ItemDetail() {
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) {
-      try {
-        await navigator.share({ title: item?.title, text: item?.description || "", url });
-      } catch {}
+      try { await navigator.share({ title: item?.title, text: item?.description || "", url }); }
+      catch {}
     } else {
       navigator.clipboard.writeText(url).catch(() => {});
       toast.success("Холбоос хуулагдлаа 📋");
@@ -57,12 +76,41 @@ function ItemDetail() {
 
   const handlePrint = () => window.print();
 
-  if (!item) return (
+  if (loading) return (
     <div>
       <Navbar />
       <div className="loading"><div className="spinner" /> Ачаалж байна...</div>
     </div>
   );
+
+  if (error) return (
+    <div>
+      <Navbar />
+      <div className="detail-page">
+        <div style={{
+          textAlign: "center", padding: "60px 24px",
+          background: "var(--card)", borderRadius: "var(--r-lg)",
+          border: "1px solid var(--border)", maxWidth: 480, margin: "0 auto",
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+          <h3 style={{ marginBottom: 10 }}>Мэдээлэл ачааллагдсангүй</h3>
+          <p style={{ color: "var(--muted)", fontSize: 14, marginBottom: 24, lineHeight: 1.6 }}>
+            Render server унтаж байгаа байж болзошгүй — 30-60 секунд дарж дахин оролдоно уу.
+          </p>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button className="btn btn-primary" onClick={fetchItem} style={{ padding: "10px 24px" }}>
+              🔄 Дахин оролдох
+            </button>
+            <button className="btn btn-outline" onClick={() => navigate(-1)} style={{ padding: "10px 24px" }}>
+              ← Буцах
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!item) return null;
 
   const imgSrc  = item.image ? (item.image.startsWith("http") || item.image.startsWith("data:") ? item.image : `${BASE_URL}/uploads/${item.image}`) : FALLBACK;
   const contact = item.contact || "86788622";

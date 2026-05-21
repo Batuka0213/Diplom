@@ -305,7 +305,7 @@ function LostItems() {
                       {isNew(item.createdAt) && <span className="new-badge">✨ Шинэ</span>}
                     </div>
                     <div className="card-body">
-                      <Link to={`/item/${item._id}`} className="card-title">{item.title}</Link>
+                      <Link to={`/item/${item._id}`} state={{ item }} className="card-title">{item.title}</Link>
                       <p className="card-desc">{item.description}</p>
                       <div className="card-meta">
                         <span>📍 {item.location || "—"}</span>
