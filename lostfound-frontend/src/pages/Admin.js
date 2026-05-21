@@ -125,6 +125,7 @@ function Admin() {
   const [tab,        setTab]       = useState("items");
   const [items,      setItems]     = useState([]);
   const [claims,     setClaims]    = useState([]);
+  const [showAllClaims, setShowAllClaims] = useState(false);
   const [search,     setSearch]    = useState("");
   const [loading,    setLoading]   = useState(true);
   const [confirm,    setConfirm]   = useState({ open: false, id: null, action: null });
@@ -251,7 +252,8 @@ function Admin() {
     try {
       await API.put(`/claims/${id}/approve`, { adminNote: note });
       toast.success("✅ Хүсэлт зөвшөөрөгдлөө");
-      loadClaims();
+      // Жагсаалтаас шууд арилгана (approved болсон)
+      setClaims(prev => prev.filter(c => c._id !== id));
       loadItems();
     } catch (err) {
       toast.error(err.response?.data?.message || "Алдаа гарлаа");
@@ -262,7 +264,8 @@ function Admin() {
     try {
       await API.put(`/claims/${id}/reject`, { adminNote: note });
       toast.success("❌ Хүсэлт татгалзагдлаа");
-      loadClaims();
+      // Жагсаалтаас шууд арилгана (rejected болсон)
+      setClaims(prev => prev.filter(c => c._id !== id));
     } catch (err) {
       toast.error(err.response?.data?.message || "Алдаа гарлаа");
     }
@@ -580,15 +583,37 @@ function Admin() {
 
         {tab === "claims" && (
           <div>
-            {claims.length === 0 ? (
+            {/* Filter toggle */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <span style={{ fontSize: 13, color: "var(--muted)" }}>
+                {claims.filter(c => c.status === "pending").length} хүлээгдэж буй
+                {claims.filter(c => c.status !== "pending").length > 0 && ` · ${claims.filter(c => c.status !== "pending").length} шийдэгдсэн`}
+              </span>
+              {claims.some(c => c.status !== "pending") && (
+                <button
+                  onClick={() => setShowAllClaims(v => !v)}
+                  style={{
+                    fontSize: 12, padding: "4px 12px", borderRadius: 20,
+                    border: "1px solid var(--border)", background: showAllClaims ? "var(--primary)" : "var(--bg)",
+                    color: showAllClaims ? "white" : "var(--muted)", cursor: "pointer",
+                  }}
+                >
+                  {showAllClaims ? "Зөвхөн хүлээгдэж буй харах" : "Бүгдийг харах"}
+                </button>
+              )}
+            </div>
+
+            {(() => {
+              const visible = showAllClaims ? claims : claims.filter(c => c.status === "pending");
+              return visible.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">🔐</div>
-                <h3>Хүсэлт байхгүй</h3>
-                <p>Одоогоор эзэмшлийн хүсэлт ирээгүй байна</p>
+                <div className="empty-icon">✅</div>
+                <h3>Хүлээгдэж буй хүсэлт байхгүй</h3>
+                <p>Бүх хүсэлт шийдэгдсэн байна</p>
               </div>
             ) : (
               <div className="aclaim-list">
-                {claims.map(claim => (
+                {visible.map(claim => (
                   <div key={claim._id} className={`aclaim-card aclaim-${claim.status}`}>
 
                     {/* Header */}
@@ -688,7 +713,8 @@ function Admin() {
                   </div>
                 ))}
               </div>
-            )}
+            );
+            })()}
           </div>
         )}
 
