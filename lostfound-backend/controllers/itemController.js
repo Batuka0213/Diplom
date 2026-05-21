@@ -254,6 +254,30 @@ exports.getSimilarItems = async (req, res) => {
 };
 
 /* ─────────────────────────────────────────
+   POST /api/items/fix-images  (admin only)
+   Render local disk-д байсан эвдэрсэн зургуудыг цэвэрлэх
+───────────────────────────────────────── */
+exports.fixBrokenImages = async (req, res) => {
+  try {
+    // Зөвхөн http (Cloudinary) эсвэл data: (base64) биш бол эвдэрсэн гэж үзнэ
+    const result = await Item.updateMany(
+      {
+        image: { $exists: true, $ne: "" },
+        $nor: [
+          { image: /^https?:\/\// },
+          { image: /^data:/ },
+        ],
+      },
+      { $set: { image: "" } }
+    );
+    res.json({ message: `${result.modifiedCount} зүйлийн эвдэрсэн зураг цэвэрлэгдлээ`, fixed: result.modifiedCount });
+  } catch (err) {
+    console.error("[fixBrokenImages]", err.message);
+    res.status(500).json({ message: "Алдаа гарлаа" });
+  }
+};
+
+/* ─────────────────────────────────────────
    GET /api/items/stats
    Dashboard тоо баримт
 ───────────────────────────────────────── */
