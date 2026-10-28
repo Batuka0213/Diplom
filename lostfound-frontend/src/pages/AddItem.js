@@ -75,13 +75,13 @@ function AddItem() {
                 <label>Ангилал</label>
                 <select name="category" value={form.category} onChange={handle}>
                   <option value="">— Сонгох —</option>
-                  <option value="phone">📱 Утас</option>
-                  <option value="key">🔑 Түлхүүр</option>
-                  <option value="bag">🎒 Цүнх</option>
-                  <option value="card">💳 Карт</option>
-                  <option value="glasses">👓 Нүдний шил</option>
-                  <option value="jewelry">💍 Гоёл чимэглэл</option>
-                  <option value="other">📦 Бусад</option>
+                  <option value="phone"> Утас</option>
+                  <option value="key"> Түлхүүр</option>
+                  <option value="bag"> Цүнх</option>
+                  <option value="card">Карт</option>
+                  <option value="glasses"> Нүдний шил</option>
+                  <option value="jewelry"> Гоёл чимэглэл</option>
+                  <option value="other"> Бусад</option>
                 </select>
               </div>
             </div>
@@ -156,7 +156,7 @@ function AddItem() {
               ) : (
                 <div className="upload-zone" onClick={() => document.getElementById("img-upload").click()}>
                   <input id="img-upload" type="file" accept="image/*" onChange={handleImage} />
-                  <div className="upload-icon">📷</div>
+                  <div className="upload-icon"></div>
                   <p>Зураг сонгохын тулд дарна уу</p>
                   <small>JPG, PNG — 5MB хүртэл</small>
                 </div>
@@ -171,7 +171,7 @@ function AddItem() {
             >
               {loading
                 ? <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Бүртгэж байна...</>
-                : "✅ Бүртгэх"
+                : " Бүртгэх"
               }
             </button>
           </form>

@@ -22,14 +22,14 @@ const API_URL  = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
 const BASE_URL = API_URL.replace("/api", "");
 
 const CAT_KEYS = [
-  { key: "all",     icon: "🗂️" },
-  { key: "phone",   icon: "📱" },
-  { key: "key",     icon: "🔑" },
-  { key: "bag",     icon: "🎒" },
-  { key: "card",    icon: "💳" },
-  { key: "glasses", icon: "👓" },
-  { key: "jewelry", icon: "💍" },
-  { key: "other",   icon: "📦" },
+  { key: "all",     icon: "" },
+  { key: "phone",   icon: "" },
+  { key: "key",     icon: "" },
+  { key: "bag",     icon: "" },
+  { key: "card",    icon: "" },
+  { key: "glasses", icon: "" },
+  { key: "jewelry", icon: "" },
+  { key: "other",   icon: "" },
 ];
 
 const inferCat = (title = "", desc = "") => {

@@ -13,7 +13,7 @@ function Footer() {
             Lost&amp;Found
           </Link>
           <p className="footer-brand-desc">
-            Хаясан болон олсон эд зүйлсийг AI технологиор тааруулж, эзэнтэй нь холбох ухаалаг систем.
+            Хаясан болон олсон эд зүйлсий  эзэнтэй нь холбох ухаалаг систем.
           </p>
           <div className="footer-social">
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-link" title="Facebook">

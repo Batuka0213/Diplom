@@ -5,14 +5,14 @@ import API from "../services/api";
 const FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23f3f4f6'/%3E%3Crect x='150' y='95' width='100' height='82' rx='8' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='22' fill='none' stroke='%23d1d5db' stroke-width='3'/%3E%3Ccircle cx='200' cy='136' r='9' fill='%23d1d5db'/%3E%3Crect x='162' y='103' width='18' height='10' rx='3' fill='%23d1d5db'/%3E%3C/svg%3E";
 
 const CATS = [
-  { value: "",        label: "Бүгд",        icon: "🗂️" },
-  { value: "phone",   label: "Утас",        icon: "📱" },
-  { value: "key",     label: "Түлхүүр",     icon: "🔑" },
-  { value: "bag",     label: "Цүнх",        icon: "🎒" },
-  { value: "card",    label: "Карт",        icon: "💳" },
-  { value: "glasses", label: "Нүдний шил",  icon: "👓" },
-  { value: "jewelry", label: "Гоёл",        icon: "💍" },
-  { value: "other",   label: "Бусад",       icon: "📦" },
+  { value: "",        label: "Бүгд",        icon: "" },
+  { value: "phone",   label: "Утас",        icon: "" },
+  { value: "key",     label: "Түлхүүр",     icon: "" },
+  { value: "bag",     label: "Цүнх",        icon: "" },
+  { value: "card",    label: "Карт",        icon: "" },
+  { value: "glasses", label: "Нүдний шил",  icon: "" },
+  { value: "jewelry", label: "Гоёл",        icon: "" },
+  { value: "other",   label: "Бусад",       icon: "" },
 ];
 
 function MatchBadge({ score }) {
